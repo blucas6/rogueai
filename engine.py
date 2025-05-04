@@ -8,7 +8,7 @@ class Engine:
     Pass any 2D character buffer and display it with colors
     '''
     def __init__(self):
-        self.inputTimeout = 20
+        self.inputTimeout = 1
         '''optional ms between engine display'''
         self.stdscr = None
         '''curses.window'''
@@ -16,10 +16,12 @@ class Engine:
         '''where to dump errors'''
         self.EventLog = 'EventLog.log'
         '''where to dump events'''
-        self.FrameDelay = 3
+        self.FrameDelay = 1
         '''optional delay between frames'''
         self.Frames = 0
         '''current frame counter'''
+        self.Initialized = False
+        '''keeps track of object initialization of the curses module'''
 
     def frameReady(self):
         '''
@@ -31,7 +33,7 @@ class Engine:
             return True
         return False
 
-    def init(self, stdscr: curses.window):
+    def init(self, stdscr: curses.window, timeDelay: int=None):
         '''
         Required to call at engine startup, returns size of terminal
         '''
@@ -42,11 +44,16 @@ class Engine:
         curses.curs_set(0)
         stdscr.nodelay(True)
         stdscr.timeout(self.inputTimeout)
+        if timeDelay:
+            self.FrameDelay = timeDelay
         # clear logs
         with open(self.ErrorLog, 'w+') as el:
             el.write('')
         with open(self.EventLog, 'w+') as el:
             el.write('')
+        self.Initialized = True
+        self.logEvent(f'Engine initialized {(self.termrows,self.termcols)}')
+        self.logEvent(f'  Frame Delay: {self.FrameDelay}')
         return self.termrows, self.termcols
 
     def output(self, screenChars: list=[], screenColors: list=[]):
@@ -54,14 +61,16 @@ class Engine:
         Call to output a 2D character buffer and an optional 2D curses
         color pair buffer to the terminal
         '''
+        if not self.Initialized:
+            return
         try:
             for r,row in enumerate(screenChars):
-                for c,col in enumerate(row):
+                for c,chr in enumerate(row):
                     if r < len(screenColors) and c < len(screenColors[r]):
                         color = screenColors[r][c]
                     else:
                         color = self.Colors.white
-                    self.stdscr.addch(r, c, col, color)
+                    self.stdscr.addch(r, c, chr, color)
             self.stdscr.refresh()
         except Exception as e:
             self.logError(f'Display ERROR: [{c},{r}]: {e}')
@@ -70,6 +79,8 @@ class Engine:
         '''
         Call to grab input and return a valid event in string form
         '''
+        if not self.Initialized:
+            return
         try:
             event = self.stdscr.getch()
             if event != curses.ERR:
@@ -91,6 +102,8 @@ class Engine:
         '''
         Moves the cursor to a position
         '''
+        if not self.Initialized:
+            return
         if pos[0] < self.termrows and pos[1] < self.termcols:
             self.stdscr.move(pos[0], pos[1])
         else:

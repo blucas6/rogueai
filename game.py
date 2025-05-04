@@ -30,7 +30,9 @@ class Game:
     '''
     Game class controls the entire game execution from start to finish
     '''
-    def __init__(self):
+    def __init__(self, engineEvents=True):
+        self.EngineEvents = engineEvents
+        '''grab events from the engine or outside source'''
         self.Engine = Engine()
         '''connection to engine for displaying and events'''
         self.running = False
@@ -52,47 +54,62 @@ class Game:
         self.Energy = 0
         '''keeps track of how much energy to dispense to objects'''
         self.Logger = Logger()
-
-    def start(self, stdscr: curses.window):
+    
+    def initialize(self, stdscr: curses.window=None, timeDelay: int=None):
         '''
-        Entry point for the game to start, will call the main loop after
-        full initialization
+        Full initialization for any game
         '''
         # start running
         self.running = True
         # initialize engine
-        self.maxCols, self.maxRows = self.Engine.init(stdscr)
+        if stdscr:
+            self.maxCols, self.maxRows = self.Engine.init(stdscr, timeDelay)
         # set up objects
         self.LevelManager = LevelManager(
                                 height=10,
                                 width=20,
                                 origin=(4,4),
-                                levels=2)
+                                levels=3)
         self.LevelManager.defaultSetUp()
         self.LevelManager.addPlayer([1,1], 0)
         self.ScreenBuffer = [[' ' for _ in range(self.maxRows-1)] 
                                     for _ in range(self.maxCols-1)]
         self.ColorBuffer = [[Colors().white for _ in range(self.maxRows-1)] 
                                     for _ in range(self.maxCols-1)]
+
+    def start(self, stdscr: curses.window=None):
+        '''
+        Entry point for the game to start, will call the main loop after
+        full initialization
+        '''
+        self.initialize(stdscr)
         self.main()
-    
+
     def main(self):
-        '''main loop'''
+        '''
+        Main process
+        '''
         while self.running:
-            # process events
-            self.Energy += self.processEvent(self.Engine.readInput())
-            # update all entities
-            self.LevelManager.updateCurrentLevel()
-            if self.LevelManager.swapLevels():
-                self.DepthMenu.changeLevel(self.LevelManager.CurrentZ)
-            # display through engine
-            if self.Engine.frameReady():
-                # build buffers
-                self.LayersToScreen()
-                self.MenusToScreen()
-                # output
-                self.Engine.output(screenChars=self.ScreenBuffer,
-                                    screenColors=self.ColorBuffer)
+            self.loop(self.Engine.readInput())
+
+    def loop(self, event=None):
+        '''
+        Execute one loop in the game loop
+        '''
+        # process events
+        self.Energy += self.processEvent(event)
+        # update all entities
+        self.LevelManager.updateCurrentLevel()
+        if self.LevelManager.swapLevels():
+            self.DepthMenu.changeLevel(self.LevelManager.CurrentZ)
+        # display through engine
+        if self.Engine.frameReady():
+            # build buffers
+            self.LayersToScreen()
+            self.MenusToScreen()
+            # output
+            self.Engine.output(screenChars=self.ScreenBuffer,
+                                screenColors=self.ColorBuffer)
     
     def MenusToScreen(self):
         '''

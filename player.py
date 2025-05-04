@@ -6,4 +6,4 @@ class Player(Entity):
         super().__init__('Player', '@', Colors().white, 1)
 
     def update(self, entityLayer):
-        self.Logger.log(f'player {self.pos} z:{self.z}')
+        pass
