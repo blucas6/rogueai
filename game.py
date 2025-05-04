@@ -4,7 +4,7 @@ from engine import Engine
 from level import LevelManager
 from colors import Colors
 from logger import Logger
-from menu import MenuManager, GameState
+from menu import MenuManager, GameState, Messager
 
 class Game:
     '''
@@ -13,7 +13,7 @@ class Game:
     def __init__(self, engineEvents=True):
         self.EngineEvents = engineEvents
         '''grab events from the engine or outside source'''
-        self.Engine = Engine()
+        self.Engine = Engine(debug=False)
         '''connection to engine for displaying and events'''
         self.running = False
         '''if the game is running'''
@@ -27,6 +27,8 @@ class Game:
         '''2D buffer the size of the map, holds all moving entities'''
         self.MenuManager = None
         '''holds all information for displaying menus'''
+        self.Messager = None
+        '''connection to the message queue instance'''
         self.Energy = 0
         '''keeps track of how much energy to dispense to objects'''
         self.Logger = Logger()
@@ -51,6 +53,7 @@ class Game:
                                 origin=(4,4),
                                 levels=3)
         self.MenuManager = MenuManager()
+        self.Messager = Messager()
         self.LevelManager.defaultSetUp()
         self.LevelManager.addPlayer([1,1], 0)
         self.ScreenBuffer = [[' ' for _ in range(self.maxRows-1)] 
@@ -78,12 +81,21 @@ class Game:
         '''
         Execute one loop in the game loop
         '''
-        # check for win condition
-        if self.win():
-            self.MenuManager.WinMenu.update(True)
-            self.MenuManager.State = GameState.WON
         # process events
         self.Energy += self.processEvent(event)
+        if self.Energy > 0:
+            self.Energy -= 1
+            # check for win condition
+            if self.win() and self.MenuManager.State == GameState.PLAYING:
+                self.Messager.addMessage('You won!')
+                self.MenuManager.State = GameState.WON
+            # deal with messages
+            self.MenuManager.MessageMenu.update()
+            if self.Messager.MsgQueue and self.MenuManager.State == GameState.PLAYING:
+                # still more messages to process
+                self.MenuManager.State = GameState.PAUSEONMSG
+            elif self.MenuManager.State == GameState.PAUSEONMSG:
+                self.MenuManager.State = GameState.PLAYING
         # update all entities
         self.LevelManager.updateCurrentLevel()
         if self.LevelManager.swapLevels():
@@ -136,14 +148,17 @@ class Game:
         # disregard empty events
         if not event:
             return 0
-        # QUIT
         if event == chr(ascii.ESC) or event == 'q':
+            # QUIT
             self.running = False
             return 0
-        # RESET
         elif event == 'r':
+            # RESET
             self.MenuManager.State = GameState.PLAYING
             self.gameSetup()
+        elif event == ' ':
+            # DO NOTHING
+            return 1
         elif self.MenuManager.State == GameState.PLAYING:
             # PLAYER ACTION
             # update turn counter

@@ -1,5 +1,6 @@
 from colors import Colors
 from logger import Logger
+from menu import Messager
 
 class Entity:
     '''
@@ -17,6 +18,9 @@ class Entity:
         self.layer = layer
         '''layer for movement'''
         self.z = -1
+        '''current z level'''
+        self.Messager = Messager()
+        '''connection to message queue'''
         self.Logger = Logger()
 
     def setPosition(self, pos: list, zlevel: int):
@@ -55,9 +59,11 @@ class Entity:
     def moveZ(self, event, entityLayer):
         for entity in entityLayer[self.pos[0]][self.pos[1]]:
             if entity.name == 'Upstair' and event == '<':
+                self.Messager.addMessage('You walk up the stairs')
                 self.z += 1
                 break
             elif entity.name == 'Downstair' and event == '>':
+                self.Messager.addMessage('You walk down the stairs')
                 self.z -= 1
                 break
 

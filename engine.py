@@ -7,7 +7,7 @@ class Engine:
     Engine class provides a curses interface displayer
     Pass any 2D character buffer and display it with colors
     '''
-    def __init__(self):
+    def __init__(self, debug=False):
         self.inputTimeout = 1
         '''optional ms between engine display'''
         self.stdscr = None
@@ -22,6 +22,8 @@ class Engine:
         '''current frame counter'''
         self.Initialized = False
         '''keeps track of object initialization of the curses module'''
+        self.debug = debug
+        '''logs more messages if true'''
 
     def frameReady(self):
         '''
@@ -84,7 +86,8 @@ class Engine:
         try:
             event = self.stdscr.getch()
             if event != curses.ERR:
-                #self.logEvent(chr(event))
+                if self.debug:
+                    self.logEvent(chr(event))
                 return chr(event)
         except Exception as e:
             self.logError(f'Read input ERROR: {event}')
