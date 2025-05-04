@@ -1,0 +1,44 @@
+class CustomEnv:
+    def __init__(self):
+        """
+        Initializes the environment and sets the observation and action shapes. 
+        
+        self.state_space_shape = state_space_shape
+        self.action_space_shape = action_space_shape
+        self.state = None  # Will be initialized in reset()
+
+    def reset(self):
+        """
+        Resets the environment to an initial state.
+        
+        Returns:
+        - state: np.ndarray or similar, the initial observation
+        """
+        raise NotImplementedError
+
+    def step(self, action):
+        """
+        Takes one step in the environment.
+        
+        Parameters:
+        - action: An action chosen by the agent
+
+        Returns:
+        - next_state: The new state after taking the action
+        - reward: Float, the reward received after taking the action
+        - done: Bool, whether the episode has ended
+        - info: Dict, optional debug info (can be empty)
+        """
+        raise NotImplementedError
+
+    def render(self):
+        """
+        (Optional) Renders the environment for visualization.
+        """
+        pass
+
+    def seed(self, seed=None):
+        """
+        (Optional) Sets the seed for reproducibility.
+        """
+        pass
