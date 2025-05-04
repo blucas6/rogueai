@@ -8,7 +8,7 @@ class LevelManager:
     LevelManager class contains all level objects and dictates what the game
     class will display
     '''
-    def __init__(self, height: int=0, width: int=0, origin: tuple=(0,0),
+    def __init__(self, rng, height: int=0, width: int=0, origin: tuple=(0,0),
         levels=0):
         self.height = height
         '''total height (rows) in the map'''
@@ -26,7 +26,7 @@ class LevelManager:
         '''player object'''
         self.Logger = Logger()
         for l in range(self.TotalLevels):
-            self.Levels.append(Level(self.height, self.width, l))
+            self.Levels.append(Level(self.height, self.width, l, rng))
         
     def defaultSetUp(self):
         '''
@@ -90,7 +90,7 @@ class Level:
     '''
     Level objects contain the map and handle the entity layer
     '''
-    def __init__(self, height, width, z):
+    def __init__(self, height, width, z, rng):
         self.height = height
         '''total height (rows) of the level'''
         self.width = width
@@ -100,6 +100,8 @@ class Level:
         self.EntityLayer = [[[] for _ in range(self.width)]
                                 for _ in range(self.height)]
         '''holds all entities on the level'''
+        self.RNG = rng
+        '''random generator with optional seed'''
         self.Logger = Logger()
 
     def default(self, downstairPos=[], upstair=True):
@@ -118,8 +120,8 @@ class Level:
             entity.setPosition(downstairPos, self.z)
             self.EntityLayer[downstairPos[0]][downstairPos[1]] = [entity]
         if upstair:
-            upstairPos = [random.randint(1,self.height-2),
-                                            random.randint(1,self.width-2)]
+            upstairPos = [self.RNG.randint(1,self.height-2),
+                                            self.RNG.randint(1,self.width-2)]
             entity = StairUp()
             entity.setPosition(upstairPos, self.z)
             self.EntityLayer[upstairPos[0]][upstairPos[1]] = [entity]

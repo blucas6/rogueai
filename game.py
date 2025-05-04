@@ -1,4 +1,5 @@
 import curses
+import random
 from curses import ascii
 from engine import Engine
 from level import LevelManager
@@ -10,7 +11,7 @@ class Game:
     '''
     Game class controls the entire game execution from start to finish
     '''
-    def __init__(self, engineEvents=True):
+    def __init__(self, seed=None, engineEvents=True):
         self.EngineEvents = engineEvents
         '''grab events from the engine or outside source'''
         self.Engine = Engine(debug=False)
@@ -31,6 +32,8 @@ class Game:
         '''connection to the message queue instance'''
         self.Energy = 0
         '''keeps track of how much energy to dispense to objects'''
+        self.seed = seed
+        '''random seed for random calls'''
         self.Logger = Logger()
     
     def displaySetup(self, stdscr: curses.window, timeDelay: int=None):
@@ -47,7 +50,9 @@ class Game:
         # start running
         self.running = True
         # set up objects
+        self.RNG = random.Random(self.seed) if self.seed is not None else random
         self.LevelManager = LevelManager(
+                                self.RNG,
                                 height=10,
                                 width=20,
                                 origin=(4,4),
