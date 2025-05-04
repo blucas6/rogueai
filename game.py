@@ -4,7 +4,7 @@ from engine import Engine
 from level import LevelManager
 from colors import Colors
 from logger import Logger
-from menu import MenuManager
+from menu import MenuManager, GameState
 
 class Game:
     '''
@@ -25,28 +25,32 @@ class Game:
         '''2D buffer the size of the terminal for outputting to engine'''
         self.CreatureLayer = None
         '''2D buffer the size of the map, holds all moving entities'''
-        self.Player = None
-        '''single player object'''
-        self.MenuManager = MenuManager()
+        self.MenuManager = None
+        '''holds all information for displaying menus'''
         self.Energy = 0
         '''keeps track of how much energy to dispense to objects'''
         self.Logger = Logger()
     
-    def initialize(self, stdscr: curses.window=None, timeDelay: int=None):
+    def displaySetup(self, stdscr: curses.window, timeDelay: int=None):
         '''
-        Full initialization for any game
+        Sets up the display for outputting to the screen
+        '''
+        # initialize engine
+        self.maxCols, self.maxRows = self.Engine.init(stdscr, timeDelay)
+    
+    def gameSetup(self):
+        '''
+        Sets up the game from a fresh start
         '''
         # start running
         self.running = True
-        # initialize engine
-        if stdscr:
-            self.maxCols, self.maxRows = self.Engine.init(stdscr, timeDelay)
         # set up objects
         self.LevelManager = LevelManager(
                                 height=10,
                                 width=20,
                                 origin=(4,4),
                                 levels=3)
+        self.MenuManager = MenuManager()
         self.LevelManager.defaultSetUp()
         self.LevelManager.addPlayer([1,1], 0)
         self.ScreenBuffer = [[' ' for _ in range(self.maxRows-1)] 
@@ -59,7 +63,8 @@ class Game:
         Entry point for the game to start, will call the main loop after
         full initialization
         '''
-        self.initialize(stdscr)
+        self.displaySetup(stdscr)
+        self.gameSetup()
         self.main()
 
     def main(self):
@@ -76,6 +81,7 @@ class Game:
         # check for win condition
         if self.win():
             self.MenuManager.WinMenu.update(True)
+            self.MenuManager.State = GameState.WON
         # process events
         self.Energy += self.processEvent(event)
         # update all entities
@@ -127,13 +133,22 @@ class Game:
         '''
         Process key press event from engine, returns energy amount
         '''
+        # disregard empty events
         if not event:
             return 0
+        # update turn counter
         self.MenuManager.TurnMenu.update()
+        # QUIT
         if event == chr(ascii.ESC) or event == 'q':
             self.running = False
             return 0
-        else:
+        # RESET
+        elif event == 'r':
+            self.MenuManager.State = GameState.PLAYING
+            self.gameSetup()
+        elif self.MenuManager.State == GameState.PLAYING:
+            # PLAYER ACTION
             self.LevelManager.Player.doAction(event,
                 self.LevelManager.getCurrentLevel().EntityLayer)
             return 1
+        return 0

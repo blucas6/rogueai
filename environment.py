@@ -30,8 +30,11 @@ class Environment:
         Environment start calls the game initialization and runs the 
         environment loop instead of the game loop
         '''
-        # initialize the game
-        self.Game.initialize(stdscr)
+        # initialize the game display if running with display on
+        if self.Display:
+            self.Game.displaySetup(stdscr)
+        # setup the game
+        self.Game.gameSetup()
         # use the environment main loop instead of the game main loop
         self.main()
 
@@ -48,6 +51,8 @@ class Environment:
             if self.Display and not action:
                 # user can command the environment if display is on
                 action = self.Game.Engine.readInput()
+                if action == 'r':
+                    self.reset()
             self.step(action)
 
     def reset(self):

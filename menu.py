@@ -1,4 +1,4 @@
-
+from enum import Enum
 
 class Menu:
     '''
@@ -53,11 +53,16 @@ class WinMenu(Menu):
             self.text = 'Game won!'
         super().update()
 
+class GameState(Enum):
+    PLAYING = 1
+    WON = 2
+
 class MenuManager:
     '''
     Handles updating and displaying of game menus
     '''
     def __init__(self):
+        self.State = GameState.PLAYING
         self.TurnMenu = TurnMenu((0,0), 10)
         self.DepthMenu = DepthMenu((0,10), 20)
         self.WinMenu = WinMenu((0,30), 10)
