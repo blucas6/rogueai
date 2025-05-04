@@ -4,27 +4,7 @@ from engine import Engine
 from level import LevelManager
 from colors import Colors
 from logger import Logger
-
-class TurnMenu:
-    '''Holds information about the turn'''
-    def __init__(self, origin: tuple):
-        self.count = 0
-        self.origin = origin
-        self.text = f'Turn: {self.count}'
-    
-    def increment(self):
-        self.count += 1
-        self.text = f'Turn: {self.count}'
-
-class DepthMenu:
-    '''Holds information about what depth being displayed'''
-    def __init__(self, origin: tuple, z: int):
-        self.origin = origin
-        self.text = ''
-        self.changeLevel(z)
-    
-    def changeLevel(self, z):
-        self.text = f'Current Level: {z+1}'
+from menu import MenuManager
 
 class Game:
     '''
@@ -47,10 +27,7 @@ class Game:
         '''2D buffer the size of the map, holds all moving entities'''
         self.Player = None
         '''single player object'''
-        self.Turn = TurnMenu(origin=(0,0))
-        '''turn counter'''
-        self.DepthMenu = DepthMenu(origin=(0,10), z=0)
-        '''displays the current level'''
+        self.MenuManager = MenuManager()
         self.Energy = 0
         '''keeps track of how much energy to dispense to objects'''
         self.Logger = Logger()
@@ -96,33 +73,31 @@ class Game:
         '''
         Execute one loop in the game loop
         '''
+        # check for win condition
+        if self.win():
+            self.MenuManager.WinMenu.update(True)
         # process events
         self.Energy += self.processEvent(event)
         # update all entities
         self.LevelManager.updateCurrentLevel()
         if self.LevelManager.swapLevels():
-            self.DepthMenu.changeLevel(self.LevelManager.CurrentZ)
+            self.MenuManager.DepthMenu.update(self.LevelManager.CurrentZ)
         # display through engine
         if self.Engine.frameReady():
             # build buffers
             self.LayersToScreen()
-            self.MenusToScreen()
+            self.MenuManager.display(self.ScreenBuffer)
             # output
             self.Engine.output(screenChars=self.ScreenBuffer,
                                 screenColors=self.ColorBuffer)
     
-    def MenusToScreen(self):
+    def win(self):
         '''
-        Add menus to screen buffer
+        Returns true if the game has been won
         '''
-        for c,ch in enumerate(self.Turn.text):
-            rw = self.Turn.origin[0]
-            cl = c+self.Turn.origin[1]
-            self.ScreenBuffer[rw][cl] = ch
-        for c,ch in enumerate(self.DepthMenu.text):
-            rw = self.DepthMenu.origin[0]
-            cl = c+self.DepthMenu.origin[1]
-            self.ScreenBuffer[rw][cl] = ch
+        if self.LevelManager.Player.z == self.LevelManager.TotalLevels-1:
+            return True
+        return False
     
     def LayersToScreen(self):
         '''
@@ -154,7 +129,7 @@ class Game:
         '''
         if not event:
             return 0
-        self.Turn.increment()
+        self.MenuManager.TurnMenu.update()
         if event == chr(ascii.ESC) or event == 'q':
             self.running = False
             return 0
