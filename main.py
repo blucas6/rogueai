@@ -16,5 +16,5 @@ if __name__ == '__main__':
     if args.environment:
         e = Environment(args.seed, args.display)
     else:
-        g = Game()
+        g = Game(args.seed)
         curses.wrapper(g.start)
