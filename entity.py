@@ -79,12 +79,6 @@ class StairUp(Entity):
     def __init__(self):
         super().__init__('Upstair', '<', Colors().white, 0)
 
-    def stair(self, entity: Entity):
-        entity.z += 1
-
 class StairDown(Entity):
     def __init__(self):
         super().__init__('Downstair', '>', Colors().white, 0)
-    
-    def stair(self, entity: Entity):
-        entity.z -= 1

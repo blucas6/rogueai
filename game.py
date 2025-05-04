@@ -136,8 +136,6 @@ class Game:
         # disregard empty events
         if not event:
             return 0
-        # update turn counter
-        self.MenuManager.TurnMenu.update()
         # QUIT
         if event == chr(ascii.ESC) or event == 'q':
             self.running = False
@@ -148,6 +146,8 @@ class Game:
             self.gameSetup()
         elif self.MenuManager.State == GameState.PLAYING:
             # PLAYER ACTION
+            # update turn counter
+            self.MenuManager.TurnMenu.update()
             self.LevelManager.Player.doAction(event,
                 self.LevelManager.getCurrentLevel().EntityLayer)
             return 1

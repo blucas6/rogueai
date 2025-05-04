@@ -8,9 +8,9 @@ class Environment:
         '''
         self.Game = Game()
         '''game object'''
-        self.TimeDelay = 100
+        self.ActionDelay = 100
         '''max amount of time to wait between bot actions'''
-        self.Time = self.TimeDelay
+        self.Delay = self.ActionDelay
         '''current time waiting'''
         self.seedn = seed
         '''seed for the game'''
@@ -44,10 +44,12 @@ class Environment:
         '''
         while self.Game.running:
             action = None
-            self.Time -= 1
-            if self.Time <= 0:
-                self.Time = self.TimeDelay
+            self.Delay -= 1
+            if self.Delay <= 0:
+                self.Delay = self.ActionDelay
                 # decide actions here
+                #
+                #
             if self.Display and not action:
                 # user can command the environment if display is on
                 action = self.Game.Engine.readInput()
