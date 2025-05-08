@@ -71,7 +71,8 @@ class Entity:
         if event.isdigit():
             self.movement(int(event), entityLayer)
         elif event == '<' or event == '>':
-            self.moveZ(event, entityLayer)
+            if not self.moveZ(event, entityLayer):
+                self.Messager.addMessage('There are no stairs here')
 
 class Wall(Entity):
     def __init__(self):

@@ -11,9 +11,7 @@ class Game:
     '''
     Game class controls the entire game execution from start to finish
     '''
-    def __init__(self, seed=None, engineEvents=True):
-        self.EngineEvents = engineEvents
-        '''grab events from the engine or outside source'''
+    def __init__(self, seed=None, msgBlocking=True):
         self.Engine = Engine(debug=False)
         '''connection to engine for displaying and events'''
         self.running = False
@@ -34,6 +32,8 @@ class Game:
         '''keeps track of how much energy to dispense to objects'''
         self.seed = seed
         '''random seed for random calls'''
+        self.MessageBlocking = msgBlocking
+        '''set to true to pause on multiple messages being displayed'''
         self.Logger = Logger()
     
     def displaySetup(self, stdscr: curses.window, timeDelay: int=None):
@@ -53,8 +53,8 @@ class Game:
         self.RNG = random.Random(self.seed) if self.seed is not None else random
         self.LevelManager = LevelManager(
                                 self.RNG,
-                                height=10,
-                                width=20,
+                                height=6,
+                                width=12,
                                 origin=(4,4),
                                 levels=3)
         self.MenuManager = MenuManager()
@@ -95,7 +95,7 @@ class Game:
                 self.Messager.addMessage('You won!')
                 self.MenuManager.State = GameState.WON
             # deal with messages
-            self.MenuManager.MessageMenu.update()
+            self.MenuManager.MessageMenu.update(blocking=self.MessageBlocking)
             if self.Messager.MsgQueue and self.MenuManager.State == GameState.PLAYING:
                 # still more messages to process
                 self.MenuManager.State = GameState.PAUSEONMSG
@@ -127,6 +127,7 @@ class Game:
         Build buffers according to layer information
         '''
         entityLayer = self.LevelManager.getCurrentLevel().EntityLayer
+        # go through entity layer
         for r,row in enumerate(entityLayer):
             for c,col in enumerate(row):
                 if (r > len(self.ScreenBuffer)-1 or 
@@ -136,14 +137,17 @@ class Game:
                 cl = c+self.LevelManager.origin[1]
                 if not entityLayer[r][c]:
                     continue
+                # find top most entity
                 if len(entityLayer[r][c]) == 1:
                     idx = 0
                 else:
                     idx = max(range(len(entityLayer[r][c])),
                             key=lambda i:entityLayer[r][c][i].layer)
+                # add character
                 self.ScreenBuffer[rw][cl] = entityLayer[r][c][idx].glyph
                 if (r < len(self.ColorBuffer)-1 and 
                         c < len(self.ColorBuffer[r])-1):
+                    # add color
                     self.ColorBuffer[rw][cl] = entityLayer[r][c][idx].color
     
     def processEvent(self, event):

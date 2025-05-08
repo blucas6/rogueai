@@ -1,14 +1,19 @@
 from game import Game
 import curses
+from geneticBot import GeneticBot, GeneticManager
+from menu import GameState
 
 class Environment:
     def __init__(self, seed=None, display=True):
         '''
         Initializes the environment
         '''
-        self.Game = Game()
+        self.Game = Game(
+            seed=seed,
+            msgBlocking=False
+        )
         '''game object'''
-        self.ActionDelay = 100
+        self.ActionDelay = 10
         '''max amount of time to wait between bot actions'''
         self.Delay = self.ActionDelay
         '''current time waiting'''
@@ -19,6 +24,7 @@ class Environment:
         self.state_space_shape = None
         self.action_space_shape = None
         self.state = None
+        self.GeneticManager = GeneticManager()
         # if using the display, start the curses module
         if self.Display:
             curses.wrapper(self.start)
@@ -50,12 +56,20 @@ class Environment:
                 # decide actions here
                 #
                 #
-            if self.Display and not action:
+                turns, score, won = self.collectGameInfo()
+                action = self.GeneticManager.play(turns, score, won)
+            if self.Display:
                 # user can command the environment if display is on
-                action = self.Game.Engine.readInput()
-                if action == 'r':
-                    self.reset()
+                event = self.Game.Engine.readInput()
+                if event:
+                    action = event
             self.step(action)
+
+    def collectGameInfo(self):
+        turns = self.Game.MenuManager.TurnMenu.count
+        score = self.Game.LevelManager.CurrentZ
+        won = True if self.Game.MenuManager.State == GameState.WON else False
+        return turns, score, won
 
     def reset(self):
         '''

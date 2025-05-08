@@ -18,10 +18,14 @@ class Messager:
     def addMessage(self, msg: str):
         self.MsgQueue.append(msg)
 
-    def popMessage(self):
+    def popMessage(self, blocking=True):
         if self.MsgQueue:
-            msg = self.MsgQueue[0]
-            del self.MsgQueue[0]
+            if blocking:
+                msg = self.MsgQueue[0]
+                del self.MsgQueue[0]
+            else:
+                msg = self.MsgQueue[-1]
+                self.MsgQueue = []
             return msg
         return ''
 
@@ -86,8 +90,8 @@ class MessageMenu(Menu):
         self.Messager = Messager()
         super().__init__(origin, length)
 
-    def update(self):
-        self.text = self.Messager.popMessage()
+    def update(self, blocking=True):
+        self.text = self.Messager.popMessage(blocking)
         if self.Messager.MsgQueue:
             self.text += " --more--"
         super().update()
