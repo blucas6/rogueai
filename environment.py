@@ -24,7 +24,6 @@ class Environment:
         self.state_space_shape = None
         self.action_space_shape = None
         self.state = None
-        self.GeneticManager = GeneticManager()
         # if using the display, start the curses module
         if self.Display:
             curses.wrapper(self.start)
@@ -56,8 +55,6 @@ class Environment:
                 # decide actions here
                 #
                 #
-                turns, score, won = self.collectGameInfo()
-                action = self.GeneticManager.play(turns, score, won)
             if self.Display:
                 # user can command the environment if display is on
                 event = self.Game.Engine.readInput()

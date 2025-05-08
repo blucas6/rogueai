@@ -96,7 +96,8 @@ class Game:
                 self.MenuManager.State = GameState.WON
             # deal with messages
             self.MenuManager.MessageMenu.update(blocking=self.MessageBlocking)
-            if self.Messager.MsgQueue and self.MenuManager.State == GameState.PLAYING:
+            if (self.Messager.MsgQueue and 
+                                self.MenuManager.State == GameState.PLAYING):
                 # still more messages to process
                 self.MenuManager.State = GameState.PAUSEONMSG
             elif self.MenuManager.State == GameState.PAUSEONMSG:
