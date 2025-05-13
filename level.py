@@ -1,4 +1,5 @@
 from entity import Entity, Wall, Floor, StairUp, StairDown
+from monster import *
 from player import Player
 from logger import Logger
 import random
@@ -38,6 +39,7 @@ class LevelManager:
                 downstairPos = level.default(downstairPos, upstair=False)
             else:
                 downstairPos = level.default(downstairPos)
+            level.generateMonsters()
 
     def addPlayer(self, pos: list, z: int):
         '''
@@ -70,6 +72,9 @@ class LevelManager:
                     elif (entity.pos[0] != r or entity.pos[1] != c):
                         if level.addEntity(entity):
                             del level.EntityLayer[r][c][idx]
+                    # remove entity from the level
+                    if not entity.isActive:
+                        del level.EntityLayer[r][c][idx]
     
     def swapLevels(self):
         '''
@@ -146,3 +151,12 @@ class Level:
             self.Logger.log(f'Invalid addition to entity layer!')
             self.Logger.log(f'   {entity.name} @ {entity.pos} z:{entity.z}')
             return False
+
+    def generateMonsters(self):
+        for r in range(self.height):
+            for c in range(self.width):
+                if (self.EntityLayer[r][c][0].name == 'Floor' and 
+                    self.RNG.randint(1,100) < 3):
+                    m = Jelly()
+                    m.setPosition((r,c), self.z)
+                    self.EntityLayer[r][c].append(m)

@@ -21,6 +21,8 @@ class Entity:
         '''current z level'''
         self.Messager = Messager()
         '''connection to message queue'''
+        self.isActive = True
+        '''if false, level manager will remove the entity from the game'''
         self.Logger = Logger()
 
     def setPosition(self, pos: list, zlevel: int):
@@ -30,33 +32,45 @@ class Entity:
         self.pos = pos
         self.z = zlevel
 
-    def move(self, delta: tuple, entityLayer: list):
+    def move(self, row: int, col: int, entityLayer: list):
         '''
         Moves the entity by a certain delta, checks the layers for validity
         '''
-        row = self.pos[0] + delta[0]
-        col = self.pos[1] + delta[1]
         maxLayer = max([x.layer for x in entityLayer[row][col]])
         if self.layer > maxLayer:
             self.pos[0] = row
             self.pos[1] = col
 
     def update(self, entityLayer):
-        '''update entity'''
+        '''default update entity'''
         pass
 
     def activate(self, *args, **kwargs):
         '''activate an entity property'''
         pass
 
-    def stair(self, entity):
-        pass
-
     def movement(self, key, entityLayer):
+        '''
+        Handle the movement action
+        '''
         moves = [(1,-1),(1,0),(1,1),(0,-1),(0,0),(0,1),(-1,-1),(-1,0),(-1,1)]
-        self.move(moves[key-1], entityLayer)
+        row = self.pos[0] + moves[key-1][0]
+        col = self.pos[1] + moves[key-1][1]
+        # check if movement triggers an attack
+        for entity in entityLayer[row][col]:
+            if hasattr(entity, 'Alive') and hasattr(self, 'Attack'):
+                entity.Alive.changeHealth(-1*self.Attack.damage)
+                if entity.Alive.alive:
+                    self.Messager.addMessage(f'You hit the {entity.name}')
+                else:
+                    self.Messager.addMessage(f'You kill the {entity.name}!')
+                return
+        self.move(row, col, entityLayer)
     
     def moveZ(self, event, entityLayer):
+        '''
+        Move the entity up or down a level
+        '''
         for entity in entityLayer[self.pos[0]][self.pos[1]]:
             if entity.name == 'Upstair' and event == '<':
                 self.Messager.addMessage('You walk up the stairs')
@@ -69,11 +83,31 @@ class Entity:
         return False
 
     def doAction(self, event, entityLayer):
+        '''
+        Entrance for entity actions
+        '''
         if event.isdigit():
             self.movement(int(event), entityLayer)
         elif event == '<' or event == '>':
             if not self.moveZ(event, entityLayer):
                 self.Messager.addMessage('There are no stairs here')
+
+class Alive:
+    def __init__(self, health):
+        self.maxHealth = health
+        self.currentHealth = health
+        self.alive = True
+        self.Logger = Logger()
+
+    def changeHealth(self, amount):
+        self.currentHealth += amount
+        if self.currentHealth <= 0:
+            self.alive = False
+
+class Attack:
+    def __init__(self, name, damage):
+        self.name = name
+        self.damage = damage
 
 class Wall(Entity):
     def __init__(self):
