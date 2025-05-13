@@ -81,6 +81,9 @@ class Environment:
         Takes one step in the environment
         '''
         self.Game.loop(action)
+        if self.Display:
+            self.Game.render()
+
 
     def render(self):
         '''

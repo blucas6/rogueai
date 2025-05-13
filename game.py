@@ -42,6 +42,10 @@ class Game:
         '''
         # initialize engine
         self.maxCols, self.maxRows = self.Engine.init(stdscr, timeDelay)
+        self.ScreenBuffer = [[' ' for _ in range(self.maxRows-1)] 
+                                    for _ in range(self.maxCols-1)]
+        self.ColorBuffer = [[Colors().white for _ in range(self.maxRows-1)] 
+                                    for _ in range(self.maxCols-1)]
 
     def noDisplaySetup(self):
         '''
@@ -68,10 +72,6 @@ class Game:
         self.Messager = Messager()
         self.LevelManager.defaultSetUp()
         self.LevelManager.addPlayer([1,1], 0)
-        self.ScreenBuffer = [[' ' for _ in range(self.maxRows-1)] 
-                                    for _ in range(self.maxCols-1)]
-        self.ColorBuffer = [[Colors().white for _ in range(self.maxRows-1)] 
-                                    for _ in range(self.maxCols-1)]
 
     def start(self, stdscr: curses.window=None):
         '''
@@ -88,6 +88,7 @@ class Game:
         '''
         while self.running:
             self.loop(self.Engine.readInput())
+            self.render()
 
     def loop(self, event=None):
         '''
@@ -113,6 +114,11 @@ class Game:
         self.LevelManager.updateCurrentLevel()
         if self.LevelManager.swapLevels():
             self.MenuManager.DepthMenu.update(self.LevelManager.CurrentZ)
+    
+    def render(self):
+        '''
+        Render the current game state to the screen
+        '''
         # display through engine
         if self.Engine.frameReady():
             # build buffers
