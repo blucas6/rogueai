@@ -38,6 +38,8 @@ class Environment:
         # initialize the game display if running with display on
         if self.Display:
             self.Game.displaySetup(stdscr)
+        else:
+            self.Game.noDisplaySetup()
         # setup the game
         self.Game.gameSetup()
         # use the environment main loop instead of the game main loop

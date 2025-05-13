@@ -42,6 +42,13 @@ class Game:
         '''
         # initialize engine
         self.maxCols, self.maxRows = self.Engine.init(stdscr, timeDelay)
+
+    def noDisplaySetup(self):
+        '''
+        Sets up the game for not using a display
+        '''
+        # need to initialize Colors without curses module
+        Colors(display=False)
     
     def gameSetup(self):
         '''
