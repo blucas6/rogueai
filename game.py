@@ -64,8 +64,8 @@ class Game:
         self.RNG = random.Random(self.seed) if self.seed is not None else random
         self.LevelManager = LevelManager(
                                 self.RNG,
-                                height=6,
-                                width=12,
+                                height=10,
+                                width=20,
                                 origin=(4,4),
                                 levels=3)
         self.MenuManager = MenuManager()
@@ -110,10 +110,10 @@ class Game:
                 self.MenuManager.State = GameState.PAUSEONMSG
             elif self.MenuManager.State == GameState.PAUSEONMSG:
                 self.MenuManager.State = GameState.PLAYING
-        # update all entities
-        self.LevelManager.updateCurrentLevel()
-        if self.LevelManager.swapLevels():
-            self.MenuManager.DepthMenu.update(self.LevelManager.CurrentZ)
+            # update all entities
+            self.LevelManager.updateCurrentLevel()
+            if self.LevelManager.swapLevels():
+                self.MenuManager.DepthMenu.update(self.LevelManager.CurrentZ)
     
     def render(self):
         '''
