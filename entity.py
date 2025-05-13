@@ -61,11 +61,12 @@ class Entity:
             if entity.name == 'Upstair' and event == '<':
                 self.Messager.addMessage('You walk up the stairs')
                 self.z += 1
-                break
+                return True
             elif entity.name == 'Downstair' and event == '>':
                 self.Messager.addMessage('You walk down the stairs')
                 self.z -= 1
-                break
+                return True
+        return False
 
     def doAction(self, event, entityLayer):
         if event.isdigit():
