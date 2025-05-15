@@ -31,6 +31,12 @@ class Entity:
         '''
         self.pos = pos
         self.z = zlevel
+    
+    def remove(self):
+        '''
+        Triggers the removal of this entity from the entity layer
+        '''
+        self.isActive = False
 
     def move(self, row: int, col: int, entityLayer: list):
         '''
@@ -58,9 +64,9 @@ class Entity:
         col = self.pos[1] + moves[key-1][1]
         # check if movement triggers an attack
         for entity in entityLayer[row][col]:
-            if hasattr(entity, 'Alive') and hasattr(self, 'Attack'):
-                entity.Alive.changeHealth(-1*self.Attack.damage)
-                if entity.Alive.alive:
+            if hasattr(entity, 'Health') and hasattr(self, 'Attack'):
+                entity.Health.changeHealth(-1*self.Attack.damage)
+                if entity.Health.alive:
                     self.Messager.addMessage(f'You hit the {entity.name}')
                 else:
                     self.Messager.addMessage(f'You kill the {entity.name}!')
@@ -92,7 +98,7 @@ class Entity:
             if not self.moveZ(event, entityLayer):
                 self.Messager.addMessage('There are no stairs here')
 
-class Alive:
+class Health:
     def __init__(self, health):
         self.maxHealth = health
         self.currentHealth = health

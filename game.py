@@ -6,12 +6,14 @@ from level import LevelManager
 from colors import Colors
 from logger import Logger
 from menu import MenuManager, GameState, Messager
+from animation import Animator
+import time
 
 class Game:
     '''
     Game class controls the entire game execution from start to finish
     '''
-    def __init__(self, seed=None, msgBlocking=True):
+    def __init__(self, seed=None, msgBlocking=True, display=True):
         self.Engine = Engine(debug=False)
         '''connection to engine for displaying and events'''
         self.running = False
@@ -34,6 +36,8 @@ class Game:
         '''random seed for random calls'''
         self.MessageBlocking = msgBlocking
         '''set to true to pause on multiple messages being displayed'''
+        self.Display = display
+        '''decides if to set up the game for displaying'''
         self.Logger = Logger()
     
     def displaySetup(self, stdscr: curses.window, timeDelay: int=None):
@@ -46,6 +50,7 @@ class Game:
                                     for _ in range(self.maxCols-1)]
         self.ColorBuffer = [[Colors().white for _ in range(self.maxRows-1)] 
                                     for _ in range(self.maxCols-1)]
+        self.Animator = Animator()
 
     def noDisplaySetup(self):
         '''
@@ -78,7 +83,10 @@ class Game:
         Entry point for the game to start, will call the main loop after
         full initialization
         '''
-        self.displaySetup(stdscr)
+        if self.Display:
+            self.displaySetup(stdscr)
+        else:
+            self.noDisplaySetup()
         self.gameSetup()
         self.main()
 
@@ -88,6 +96,8 @@ class Game:
         '''
         while self.running:
             self.loop(self.Engine.readInput())
+            self.prepareBuffers()
+            self.animations()
             self.render()
 
     def loop(self, event=None):
@@ -115,18 +125,40 @@ class Game:
             if self.LevelManager.swapLevels():
                 self.MenuManager.DepthMenu.update(self.LevelManager.CurrentZ)
     
+    def animations(self):
+        '''
+        Display animations
+        '''
+        animation = self.Animator.popAnimation()
+        if animation:
+            for idx,frame in animation.frames.items():
+                self.prepareBuffers()
+                for r,row in enumerate(frame):
+                    for c,col in enumerate(row):
+                        if not col:
+                            continue
+                        rw, cl = self.mapPosToScreenPos(animation.pos[0]+r,
+                                                        animation.pos[1]+c)
+                        self.ScreenBuffer[rw][cl] = col
+                self.render()
+                self.Engine.pause(animation.delay)
+
     def render(self):
         '''
         Render the current game state to the screen
         '''
         # display through engine
         if self.Engine.frameReady():
-            # build buffers
-            self.LayersToScreen()
-            self.MenuManager.display(self.ScreenBuffer)
             # output
             self.Engine.output(screenChars=self.ScreenBuffer,
                                 screenColors=self.ColorBuffer)
+
+    def prepareBuffers(self):
+        '''
+        Updates the screen buffer
+        '''
+        self.LayersToScreen()
+        self.MenuManager.display(self.ScreenBuffer)
     
     def win(self):
         '''
@@ -135,6 +167,17 @@ class Game:
         if self.LevelManager.Player.z == self.LevelManager.TotalLevels-1:
             return True
         return False
+
+    def boundsCheck(self, buffer, r, c):
+        '''
+        Checks if a position is valid within the screen buffer
+        '''
+        if (r > len(buffer)-1 or c > len(buffer[r])-1):
+            return False
+        return True
+
+    def mapPosToScreenPos(self, r, c):
+        return r+self.LevelManager.origin[0], c+self.LevelManager.origin[1]
     
     def LayersToScreen(self):
         '''
@@ -144,11 +187,7 @@ class Game:
         # go through entity layer
         for r,row in enumerate(entityLayer):
             for c,col in enumerate(row):
-                if (r > len(self.ScreenBuffer)-1 or 
-                        c > len(self.ScreenBuffer[r])-1):
-                    continue
-                rw = r+self.LevelManager.origin[0]
-                cl = c+self.LevelManager.origin[1]
+                rw, cl = self.mapPosToScreenPos(r,c)
                 if not entityLayer[r][c]:
                     continue
                 # find top most entity
@@ -157,12 +196,14 @@ class Game:
                 else:
                     idx = max(range(len(entityLayer[r][c])),
                             key=lambda i:entityLayer[r][c][i].layer)
+                if not self.boundsCheck(self.ScreenBuffer, rw, cl):
+                    continue
                 # add character
                 self.ScreenBuffer[rw][cl] = entityLayer[r][c][idx].glyph
-                if (r < len(self.ColorBuffer)-1 and 
-                        c < len(self.ColorBuffer[r])-1):
-                    # add color
-                    self.ColorBuffer[rw][cl] = entityLayer[r][c][idx].color
+                if not self.boundsCheck(self.ColorBuffer, rw, cl):
+                    continue
+                # add color
+                self.ColorBuffer[rw][cl] = entityLayer[r][c][idx].color
     
     def processEvent(self, event):
         '''

@@ -1,5 +1,6 @@
 import curses
 import traceback
+import time
 from colors import Colors
 
 class Engine:
@@ -111,3 +112,11 @@ class Engine:
             self.stdscr.move(pos[0], pos[1])
         else:
             self.logError(f'Invalid cursor position {pos}')
+
+    def pause(self, t=1):
+        '''
+        Sleeps the engine and discards any key presses
+        '''
+        time.sleep(t)
+        while self.stdscr.getch() != -1:
+            pass

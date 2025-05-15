@@ -39,7 +39,7 @@ class LevelManager:
                 downstairPos = level.default(downstairPos, upstair=False)
             else:
                 downstairPos = level.default(downstairPos)
-            # level.generateMonsters()
+            level.generateMonsters()
 
     def addPlayer(self, pos: list, z: int):
         '''

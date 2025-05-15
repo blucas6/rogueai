@@ -82,6 +82,8 @@ class Environment:
         '''
         self.Game.loop(action)
         if self.Display:
+            self.Game.prepareBuffers()
+            self.Game.animations()
             self.Game.render()
 
 
