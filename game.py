@@ -99,17 +99,21 @@ class Game:
         while self.running:
             # update the game
             self.loop(self.Engine.readInput())
-            # grab any messages in the queue
+            # update and grab any messages in the queue
             self.messages()
+            # rewrite all the map buffers and menu buffers to the screen
             self.prepareBuffers()
+            # output screen buffer to terminal
             self.render()
+            # display any queued animations all at once
             self.animations()
 
     def messages(self):
         # deal with messages
         self.MenuManager.MessageMenu.update(blocking=self.MessageBlocking)
         if self.Messager.MsgQueue:
-            # still more messages to process
+            # still more messages to process, msg queue should never be full if
+            # non blocking mode is on
             self.stateMachine('msgQFull')
         else:
             self.stateMachine('msgQEmpty')
@@ -138,6 +142,7 @@ class Game:
         Display animations
         '''
         if self.Animator.AnimationQueue:
+            # animations have been queued
             for animation in self.Animator.AnimationQueue:
                 apos = animation.pos
                 delay = animation.delay
@@ -151,8 +156,10 @@ class Game:
                                 continue
                             rw, cl = self.mapPosToScreenPos(apos[0]+r,apos[1]+c)
                             self.ScreenBuffer[rw][cl] = col
+                    # output to terminal
                     self.render()
                     self.Engine.pause(delay)
+            # done with all animations
             self.Animator.clearQueue()
 
     def render(self):

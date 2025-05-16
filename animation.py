@@ -2,24 +2,22 @@ from colors import Colors
 import time
 
 class Animation:
+    '''
+    Default animation class, used in Animator queue
+    '''
     def __init__(self, pos, frames: dict, color: Colors, delay=0.1):
         self.pos = pos
+        '''position of the animation relative to the map'''
         self.frames = frames
+        '''dictionary of an array of frames to display'''
         self.color = color
+        '''color of the animation'''
         self.delay = delay
-        self.currentFrame = 1
-
-    def popFrame(self):
-        if str(self.currentFrame) in self.frames:
-            frame = self.frames[str(self.currentFrame)]
-            self.currentFrame += 1
-            return frame
-        else:
-            return None
+        '''delay between frames (engine will sleep)'''
 
 class Animator:
     '''
-    Queues animations
+    Holds the animation queue
     '''
     _instance = None
     
@@ -35,7 +33,13 @@ class Animator:
             self.AnimationQueue = []
 
     def queueUp(self, animation: Animation):
+        '''
+        Queue an animation object to be displayed
+        '''
         self.AnimationQueue.append(animation)
     
     def clearQueue(self):
+        '''
+        Clears the animation queue
+        '''
         self.AnimationQueue = []

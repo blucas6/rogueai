@@ -94,10 +94,16 @@ class Engine:
             self.logError(f'Read input ERROR: {event}')
     
     def logEvent(self, msg):
+        '''
+        Logs an event to the event log
+        '''
         with open(self.EventLog, 'a+') as lf:
             lf.write(f'{msg}\n')
 
     def logError(self, msg=''):
+        '''
+        Logs an engine error to the error log
+        '''
         with open(self.ErrorLog, 'a+') as lf:
             lf.write(f'{traceback.format_exc()}')
             lf.write(f'{msg}\n')

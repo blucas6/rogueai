@@ -155,8 +155,8 @@ class Level:
     def generateMonsters(self):
         for r in range(self.height):
             for c in range(self.width):
-                if (self.EntityLayer[r][c][0].name == 'Floor' and 
-                    self.RNG.randint(1,100) < 3):
+                maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
+                if (maxLayer == 0 and self.RNG.randint(1,100) < 40):
                     m = Jelly()
                     m.setPosition((r,c), self.z)
                     self.EntityLayer[r][c].append(m)

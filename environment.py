@@ -65,6 +65,7 @@ class Environment:
             self.step(action)
 
     def collectGameInfo(self):
+        '''collect game information for observations here'''
         turns = self.Game.MenuManager.TurnMenu.count
         score = self.Game.LevelManager.CurrentZ
         won = True if self.Game.MenuManager.State == GameState.WON else False
@@ -81,11 +82,11 @@ class Environment:
         Takes one step in the environment
         '''
         self.Game.loop(action)
+        self.Game.messages()
         if self.Display:
             self.Game.prepareBuffers()
-            self.Game.animations()
             self.Game.render()
-
+            self.Game.animations()
 
     def render(self):
         '''

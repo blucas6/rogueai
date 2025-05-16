@@ -14,12 +14,21 @@ class Messager:
         return obj._instance
     
     def clear(self):
+        '''
+        Clears the msg queue
+        '''
         self.MsgQueue = []
 
     def addMessage(self, msg: str):
+        '''
+        Adds a msg to the msg queue
+        '''
         self.MsgQueue.append(msg)
 
     def popMessage(self, blocking=True):
+        '''
+        If msg queue has a msg, it will return the msg by FIFO
+        '''
         if self.MsgQueue:
             if blocking:
                 msg = self.MsgQueue[0]
@@ -70,9 +79,11 @@ class TurnMenu(Menu):
     '''Displays the turn information'''
     def __init__(self, origin: tuple, length: int):
         self.count = -1
+        '''turn count'''
         super().__init__(origin, length)
 
     def update(self):
+        '''updates the turn count'''
         self.count += 1
         self.text = f'Turn: {self.count}'
         super().update()
@@ -83,6 +94,7 @@ class DepthMenu(Menu):
         super().__init__(origin, length)
     
     def update(self, z=0):
+        '''updates the level index'''
         self.text = f'Current Level: {z+1}'
         super().update()
 
@@ -90,9 +102,11 @@ class MessageMenu(Menu):
     '''Reads the messager object for messages'''
     def __init__(self, origin: tuple, length: int):
         self.Messager = Messager()
+        '''connection to msg queue'''
         super().__init__(origin, length)
 
     def update(self, blocking=True):
+        '''if no msg is being displayed, grab the next msg'''
         if not self.text:
             self.text = self.Messager.popMessage(blocking)
             if self.Messager.MsgQueue:
@@ -100,27 +114,26 @@ class MessageMenu(Menu):
         super().update()
 
     def clear(self):
-        self.Logger = Logger()
-        self.Logger.log(self.text)
-        self.Logger.log(self.Messager.MsgQueue)
+        '''clears the current msg to allow grabbing a new one'''
         self.text = ''
 
 class GameState(Enum):
     PLAYING = 1
     WON = 2
     PAUSEONMSG = 3
-    ANIMATING = 4
 
 class MenuManager:
     '''
     Handles updating and displaying of game menus
     '''
     def __init__(self):
+        '''Sets up all menus'''
         self.TurnMenu = TurnMenu((20,0), 10)
         self.DepthMenu = DepthMenu((20,10), 20)
         self.MessageMenu = MessageMenu((0,0), 50)
 
     def display(self, screenBuffer):
+        '''Displays all menus to screen buffer'''
         self.TurnMenu.display(screenBuffer)
         self.DepthMenu.display(screenBuffer)
         self.MessageMenu.display(screenBuffer)
