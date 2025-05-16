@@ -21,12 +21,12 @@ class Jelly(Entity):
         Generate the explosion on death
         '''
         frames = {}
-        frames['1'] = [
+        frames['0'] = [
             ['','' ,''],
             ['','*',''],
             ['','' ,'']
         ]
-        frames['2'] = [
+        frames['1'] = [
             ['/' ,'-', '\\'],
             ['|','' ,'|'],
             ['\\' ,'-', '/']

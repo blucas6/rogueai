@@ -143,22 +143,26 @@ class Game:
         '''
         if self.Animator.AnimationQueue:
             # animations have been queued
-            for animation in self.Animator.AnimationQueue:
-                apos = animation.pos
-                delay = animation.delay
-                for key,frame in animation.frames.items():
-                    # build the screen
-                    self.prepareBuffers()
+            frameCounter = 0
+            maxFrames = max([len(list(x.frames.keys())) for x in self.Animator.AnimationQueue])
+            for frameCounter in range(maxFrames):
+                # build the screen
+                self.prepareBuffers()
+                for animation in self.Animator.AnimationQueue:
+                    if frameCounter >= len(list(animation.frames.keys())):
+                        continue
+                    apos = animation.pos
+                    delay = animation.delay
                     # add frame array to the screen
-                    for r,row in enumerate(frame):
+                    for r,row in enumerate(animation.frames[str(frameCounter)]):
                         for c,col in enumerate(row):
                             if not col:
                                 continue
                             rw, cl = self.mapPosToScreenPos(apos[0]+r,apos[1]+c)
                             self.ScreenBuffer[rw][cl] = col
-                    # output to terminal
-                    self.render()
-                    self.Engine.pause(delay)
+                # output to terminal
+                self.render()
+                self.Engine.pause(delay)
             # done with all animations
             self.Animator.clearQueue()
 
