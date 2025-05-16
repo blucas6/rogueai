@@ -44,7 +44,6 @@ class Jelly(Entity):
             col = self.pos[1] + point[1]
             if (row,col) == self.pos:
                 continue
-            self.Logger.log(f'{self.pos} {row} {col}')
             if self.validSpace(entityLayer, row, col):
                 for entity in entityLayer[row][col]:
                     if hasattr(entity, 'Health'):

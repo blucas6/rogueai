@@ -149,7 +149,7 @@ class Attack:
 class Wall(Entity):
     '''Wall entity'''
     def __init__(self):
-        super().__init__('Wall', '0', Colors().white, 2)
+        super().__init__('Wall', '░', Colors().white, 2)
 
 class Floor(Entity):
     '''Floor entity'''

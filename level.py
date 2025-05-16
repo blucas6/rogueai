@@ -29,7 +29,7 @@ class LevelManager:
         for l in range(self.TotalLevels):
             self.Levels.append(Level(self.height, self.width, l, rng))
         
-    def defaultSetUp(self):
+    def defaultLevelSetup(self):
         '''
         Load a default map on all levels
         '''
@@ -39,7 +39,18 @@ class LevelManager:
                 downstairPos = level.default(downstairPos, upstair=False)
             else:
                 downstairPos = level.default(downstairPos)
-            # level.generateMonsters()
+            level.generateMonsters()
+
+    def defaultLevelSetupWalls(self):
+        '''
+        Load a default map with some walls'''
+        downstairPos = []
+        for level in self.Levels:
+            if level == self.Levels[-1]:
+                downstairPos = level.defaultWalls(downstairPos, upstair=False)
+            else:
+                downstairPos = level.defaultWalls(downstairPos)
+            level.generateMonsters()
 
     def addPlayer(self, pos: list, z: int):
         '''
@@ -111,30 +122,103 @@ class Level:
 
     def default(self, downstairPos=[], upstair=True):
         '''loads a default map'''
-        for r in range(self.height):
-            for c in range(self.width):
-                if r == 0 or c == 0 or r == self.height-1 or c == self.width-1:
-                    entity = Wall()
-                else:
-                    entity = Floor()
-                self.EntityLayer[r][c] = [entity]
-                entity.setPosition((r,c), self.z)
+        # generate walls and floor
+        self.generateWallsFloor()
         # add stairs
+        return self.generateStairs(downstairPos, upstair)
+    
+    def defaultWalls(self, downstairPos=[], upstair=True):
+        '''loads a map with some walls'''
+        # generate walls and floor
+        self.generateWallsFloor()
+        wallShapes = []
+        wallL = [
+            ['0','',''],
+            ['0','',''],
+            ['0','0','']
+        ]
+        wallPlus = [
+            ['','0',''],
+            ['0','0','0'],
+            ['','0','']
+        ]
+        wallLine = [
+            ['','0',''],
+            ['','0',''],
+            ['','0','']
+        ]
+        wallShapes.append(wallL)
+        wallShapes.append(wallPlus)
+        wallShapes.append(wallLine)
+        for r in range(self.height):
+            for c in range(self.width): 
+                maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
+                if maxLayer < 1 and self.RNG.randint(1,100) < 10:
+                    shape = wallShapes[self.RNG.randint(0,len(wallShapes)-1)]
+                    times = self.RNG.randint(0,3)
+                    for t in range(times):
+                        shape = [list(row) for row in zip(*shape[::-1])]
+                    # validate all positions of shape
+                    valid = True
+                    for sr,srow in enumerate(shape):
+                        for sc,scol in enumerate(srow):
+                            valid = self.withinMap([r+sr,c+sc])
+                    if not valid:
+                        continue
+                    for sr,srows in enumerate(shape):
+                        for sc,scols in enumerate(srows):
+                            if scols:
+                                self.placeEntity(Wall(), [r+sr,c+sc])
+        # add stairs
+        return self.generateStairs(downstairPos, upstair)
+
+    def placeEntity(self, entity: Entity, pos, overwrite=False):
+        '''
+        Places an entity somewhere valid on the map
+        '''
+        if self.withinMap(pos):
+            if not overwrite and self.EntityLayer[pos[0]][pos[1]]:
+                maxLayer = max([x.layer for x in self.EntityLayer[pos[0]][pos[1]]])
+                if entity.layer <= maxLayer:
+                    return                 
+            entity.setPosition(pos, self.z)
+            if overwrite:
+                self.EntityLayer[pos[0]][pos[1]] = [entity]
+            else:
+                self.EntityLayer[pos[0]][pos[1]].append(entity)
+        else:
+            self.Logger.log(f'Failed to place entity -> {entity.name} {pos}')
+
+    def generateStairs(self, downstairPos=[], upstair=True):
+        '''
+        Adds downstairs if there was a previous upstairs on the level below
+        Adds upstairs somewhere random
+        '''
         if downstairPos:
-            entity = StairDown()
-            entity.setPosition(downstairPos, self.z)
-            self.EntityLayer[downstairPos[0]][downstairPos[1]] = [entity]
+            self.placeEntity(StairDown(), downstairPos, overwrite=True)
         if upstair:
             upstairPos = [self.RNG.randint(1,self.height-2),
                                             self.RNG.randint(1,self.width-2)]
-            entity = StairUp()
-            entity.setPosition(upstairPos, self.z)
-            self.EntityLayer[upstairPos[0]][upstairPos[1]] = [entity]
+            self.placeEntity(StairUp(), upstairPos, overwrite=True)
             return upstairPos
         return [-1,-1]
 
+    def generateWallsFloor(self):
+        '''
+        Adds surrounding walls and floor to a blank entity array
+        '''
+        for r in range(self.height):
+            for c in range(self.width):
+                # check if within the array or on the border
+                if r == 0 or c == 0 or r == self.height-1 or c == self.width-1:
+                    self.placeEntity(Wall(),[r,c],overwrite=True)
+                else:
+                    self.placeEntity(Floor(),[r,c],overwrite=True)
+
     def withinMap(self, pos):
-        '''returns if a position is valid within the map'''
+        '''
+        Returns if a position is valid within the map
+        '''
         if (pos[0] < len(self.EntityLayer) and 
             pos[1] < len(self.EntityLayer[0]) and pos[0] >= 0 and pos[1] >= 0):
             return True
@@ -156,7 +240,7 @@ class Level:
         for r in range(self.height):
             for c in range(self.width):
                 maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
-                if (maxLayer == 0 and self.RNG.randint(1,100) < 40):
+                if (maxLayer == 0 and self.RNG.randint(1,100) < 3):
                     m = Jelly()
                     m.setPosition((r,c), self.z)
                     self.EntityLayer[r][c].append(m)
