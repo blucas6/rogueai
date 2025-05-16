@@ -1,4 +1,5 @@
 from enum import Enum
+from logger import Logger
 
 class Messager:
     '''
@@ -24,7 +25,7 @@ class Messager:
                 msg = self.MsgQueue[0]
                 del self.MsgQueue[0]
             else:
-                msg = self.MsgQueue[-1]
+                msg = self.MsgQueue[0]
                 self.MsgQueue = []
             return msg
         return ''
@@ -45,6 +46,7 @@ class Menu:
         self.textSave = ''
         '''previously used text message'''
         self.update()
+        self.Logger = Logger()
 
     def update(self, *args, **kwargs):
         '''
@@ -91,22 +93,29 @@ class MessageMenu(Menu):
         super().__init__(origin, length)
 
     def update(self, blocking=True):
-        self.text = self.Messager.popMessage(blocking)
-        if self.Messager.MsgQueue:
-            self.text += " --more--"
+        if not self.text:
+            self.text = self.Messager.popMessage(blocking)
+            if self.Messager.MsgQueue:
+                self.text += " --more--"
         super().update()
+
+    def clear(self):
+        self.Logger = Logger()
+        self.Logger.log(self.text)
+        self.Logger.log(self.Messager.MsgQueue)
+        self.text = ''
 
 class GameState(Enum):
     PLAYING = 1
     WON = 2
     PAUSEONMSG = 3
+    ANIMATING = 4
 
 class MenuManager:
     '''
     Handles updating and displaying of game menus
     '''
     def __init__(self):
-        self.State = GameState.PLAYING
         self.TurnMenu = TurnMenu((20,0), 10)
         self.DepthMenu = DepthMenu((20,10), 20)
         self.MessageMenu = MessageMenu((0,0), 50)

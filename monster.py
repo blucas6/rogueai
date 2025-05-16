@@ -1,6 +1,7 @@
 from entity import Entity, Health
 from colors import Colors
 from animation import Animator, Animation
+from menu import Messager
 
 class Jelly(Entity):
     def __init__(self):
@@ -9,6 +10,7 @@ class Jelly(Entity):
 
     def update(self, entityLayer):
         if not self.Health.alive:
+            Messager().addMessage('It explodes!')
             self.remove()
 
     def remove(self):
@@ -19,9 +21,9 @@ class Jelly(Entity):
             ['','' ,'']
         ]
         frames['2'] = [
-            ['' ,'_', ''],
-            ['/','' ,'/'],
-            ['' ,'_', '']
+            ['/' ,'-', '\\'],
+            ['|','' ,'|'],
+            ['\\' ,'-', '/']
         ]
         apos = [0,0]
         apos[0] = self.pos[0]-1

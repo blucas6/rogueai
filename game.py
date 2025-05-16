@@ -38,6 +38,8 @@ class Game:
         '''set to true to pause on multiple messages being displayed'''
         self.Display = display
         '''decides if to set up the game for displaying'''
+        self.GameState = GameState.PLAYING
+        '''controls the state of the game'''
         self.Logger = Logger()
     
     def displaySetup(self, stdscr: curses.window, timeDelay: int=None):
@@ -95,10 +97,22 @@ class Game:
         Main process
         '''
         while self.running:
+            # update the game
             self.loop(self.Engine.readInput())
+            # grab any messages in the queue
+            self.messages()
             self.prepareBuffers()
-            self.animations()
             self.render()
+            self.animations()
+
+    def messages(self):
+        # deal with messages
+        self.MenuManager.MessageMenu.update(blocking=self.MessageBlocking)
+        if self.Messager.MsgQueue:
+            # still more messages to process
+            self.stateMachine('msgQFull')
+        else:
+            self.stateMachine('msgQEmpty')
 
     def loop(self, event=None):
         '''
@@ -108,18 +122,12 @@ class Game:
         self.Energy += self.processEvent(event)
         if self.Energy > 0:
             self.Energy -= 1
+            # clear current message
+            self.MenuManager.MessageMenu.clear()
             # check for win condition
-            if self.win() and self.MenuManager.State == GameState.PLAYING:
+            if not self.GameState == GameState.WON and self.win():
                 self.Messager.addMessage('You won!')
-                self.MenuManager.State = GameState.WON
-            # deal with messages
-            self.MenuManager.MessageMenu.update(blocking=self.MessageBlocking)
-            if (self.Messager.MsgQueue and 
-                                self.MenuManager.State == GameState.PLAYING):
-                # still more messages to process
-                self.MenuManager.State = GameState.PAUSEONMSG
-            elif self.MenuManager.State == GameState.PAUSEONMSG:
-                self.MenuManager.State = GameState.PLAYING
+                self.stateMachine('won')
             # update all entities
             self.LevelManager.updateCurrentLevel()
             if self.LevelManager.swapLevels():
@@ -129,19 +137,23 @@ class Game:
         '''
         Display animations
         '''
-        animation = self.Animator.popAnimation()
-        if animation:
-            for idx,frame in animation.frames.items():
-                self.prepareBuffers()
-                for r,row in enumerate(frame):
-                    for c,col in enumerate(row):
-                        if not col:
-                            continue
-                        rw, cl = self.mapPosToScreenPos(animation.pos[0]+r,
-                                                        animation.pos[1]+c)
-                        self.ScreenBuffer[rw][cl] = col
-                self.render()
-                self.Engine.pause(animation.delay)
+        if self.Animator.AnimationQueue:
+            for animation in self.Animator.AnimationQueue:
+                apos = animation.pos
+                delay = animation.delay
+                for key,frame in animation.frames.items():
+                    # build the screen
+                    self.prepareBuffers()
+                    # add frame array to the screen
+                    for r,row in enumerate(frame):
+                        for c,col in enumerate(row):
+                            if not col:
+                                continue
+                            rw, cl = self.mapPosToScreenPos(apos[0]+r,apos[1]+c)
+                            self.ScreenBuffer[rw][cl] = col
+                    self.render()
+                    self.Engine.pause(delay)
+            self.Animator.clearQueue()
 
     def render(self):
         '''
@@ -218,12 +230,12 @@ class Game:
             return 0
         elif event == 'r':
             # RESET
-            self.MenuManager.State = GameState.PLAYING
+            self.stateMachine('reset')
             self.gameSetup()
         elif event == ' ':
             # DO NOTHING
             return 1
-        elif self.MenuManager.State == GameState.PLAYING:
+        elif self.GameState == GameState.PLAYING:
             # PLAYER ACTION
             # update turn counter
             self.MenuManager.TurnMenu.update()
@@ -231,3 +243,15 @@ class Game:
                 self.LevelManager.getCurrentLevel().EntityLayer)
             return 1
         return 0
+
+    def stateMachine(self, event):
+        if event == 'msgQFull' and self.GameState == GameState.PLAYING:
+            # too many messages to display, block user input until resolved
+            self.GameState = GameState.PAUSEONMSG
+        elif event == 'msgQEmpty' and self.GameState == GameState.PAUSEONMSG:
+            # if paused and msg queue is cleared, go back to normal
+            self.GameState = GameState.PLAYING
+        elif event == 'won':
+            self.GameState = GameState.WON
+        elif event == 'reset':
+            self.GameState = GameState.PLAYING

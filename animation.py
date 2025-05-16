@@ -7,6 +7,15 @@ class Animation:
         self.frames = frames
         self.color = color
         self.delay = delay
+        self.currentFrame = 1
+
+    def popFrame(self):
+        if str(self.currentFrame) in self.frames:
+            frame = self.frames[str(self.currentFrame)]
+            self.currentFrame += 1
+            return frame
+        else:
+            return None
 
 class Animator:
     '''
@@ -27,10 +36,6 @@ class Animator:
 
     def queueUp(self, animation: Animation):
         self.AnimationQueue.append(animation)
-
-    def popAnimation(self):
-        animation = None
-        if self.AnimationQueue:
-            animation = self.AnimationQueue[-1]
-            del self.AnimationQueue[-1]
-        return animation
+    
+    def clearQueue(self):
+        self.AnimationQueue = []
