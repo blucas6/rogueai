@@ -53,7 +53,8 @@ class Entity:
         '''
         Utility for checking in the entity layer
         '''
-        if row < len(entityLayer) and col < len(entityLayer[row]):
+        if (row < len(entityLayer) and col < len(entityLayer[row]) and
+            row >= 0 and col >= 0):
             return True
         return False
 
