@@ -77,8 +77,9 @@ class Game:
                                 levels=3)
         self.MenuManager = MenuManager()
         self.Messager = Messager()
-        self.LevelManager.defaultLevelSetupWalls()
-        self.LevelManager.addPlayer([1,1], 0)
+        startPos = [1,1]
+        self.LevelManager.defaultLevelSetupWalls(startPos)
+        self.LevelManager.addPlayer(startPos, 0)
 
     def start(self, stdscr: curses.window=None):
         '''

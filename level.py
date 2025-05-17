@@ -3,6 +3,7 @@ from monster import *
 from player import Player
 from logger import Logger
 import random
+from algo import dijkstra
 
 class LevelManager:
     '''
@@ -29,27 +30,36 @@ class LevelManager:
         for l in range(self.TotalLevels):
             self.Levels.append(Level(self.height, self.width, l, rng))
         
-    def defaultLevelSetup(self):
+    def defaultLevelSetup(self, playerPos):
         '''
         Load a default map on all levels
         '''
         downstairPos = []
         for level in self.Levels:
             if level == self.Levels[-1]:
-                downstairPos = level.default(downstairPos, upstair=False)
+                downstairPos = level.default(
+                    downstairPos=downstairPos, upstair=False)
+            elif level == self.Levels[0]:
+                downstairPos = level.default(
+                    playerPos=playerPos, downstairPos=downstairPos)
             else:
-                downstairPos = level.default(downstairPos)
+                downstairPos = level.default(downstairPos=downstairPos)
             level.generateMonsters()
 
-    def defaultLevelSetupWalls(self):
+    def defaultLevelSetupWalls(self, playerPos):
         '''
-        Load a default map with some walls'''
+        Load a default map with some walls
+        '''
         downstairPos = []
         for level in self.Levels:
             if level == self.Levels[-1]:
-                downstairPos = level.defaultWalls(downstairPos, upstair=False)
+                downstairPos = level.defaultWalls(
+                    downstairPos=downstairPos, upstair=False)
+            elif level == self.Levels[0]:
+                downstairPos = level.defaultWalls(
+                    playerPos=playerPos, downstairPos=downstairPos)
             else:
-                downstairPos = level.defaultWalls(downstairPos)
+                downstairPos = level.defaultWalls(downstairPos=downstairPos)
             level.generateMonsters()
 
     def addPlayer(self, pos: list, z: int):
@@ -120,22 +130,36 @@ class Level:
         '''random generator with optional seed'''
         self.Logger = Logger()
 
-    def default(self, downstairPos=[], upstair=True):
+    def default(self, playerPos=[], downstairPos=[], upstair=True):
         '''loads a default map'''
         # generate walls and floor
-        self.generateWallsFloor()
+        self.generateSurroundingWallsFloor()
         # add stairs
-        return self.generateStairs(downstairPos, upstair)
+        return self.generateStairs(
+            playerPos=playerPos, downstairPos=downstairPos, upstair=upstair)
     
-    def defaultWalls(self, downstairPos=[], upstair=True):
+    def defaultWalls(self, playerPos=[], downstairPos=[], upstair=True):
         '''loads a map with some walls'''
         # generate walls and floor
-        self.generateWallsFloor()
+        self.generateSurroundingWallsFloor()
+        # add wall shapes
+        self.wallShapeGenerator(playerPos=playerPos, minWallsPlaced=45)
+        # add stairs
+        return self.generateStairs(
+            playerPos=playerPos, downstairPos=downstairPos, upstair=upstair)
+
+    def wallShapeGenerator(self, playerPos=[], minWallsPlaced=10):
+        '''
+        Generates walls on the level using predetermined shapes
+        minWallsPlaced counts how many wall spaces need to be covered in the 
+        level
+        '''
+        self.Logger.log(playerPos)
         wallShapes = []
         wallL = [
             ['0','',''],
             ['0','',''],
-            ['0','0','']
+            ['0','0','0']
         ]
         wallPlus = [
             ['','0',''],
@@ -147,34 +171,42 @@ class Level:
             ['','0',''],
             ['','0','']
         ]
+        wallCorner = [
+            ['','',''],
+            ['0','',''],
+            ['0','0','']
+        ]
         wallShapes.append(wallL)
         wallShapes.append(wallPlus)
         wallShapes.append(wallLine)
-        for r in range(self.height):
-            for c in range(self.width): 
-                maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
-                if maxLayer < 1 and self.RNG.randint(1,100) < 10:
-                    shape = wallShapes[self.RNG.randint(0,len(wallShapes)-1)]
-                    times = self.RNG.randint(0,3)
-                    for t in range(times):
-                        shape = [list(row) for row in zip(*shape[::-1])]
-                    # validate all positions of shape
-                    valid = True
-                    for sr,srow in enumerate(shape):
-                        for sc,scol in enumerate(srow):
-                            valid = self.withinMap([r+sr,c+sc])
-                    if not valid:
-                        continue
-                    for sr,srows in enumerate(shape):
-                        for sc,scols in enumerate(srows):
-                            if scols:
-                                self.placeEntity(Wall(), [r+sr,c+sc])
-        # add stairs
-        return self.generateStairs(downstairPos, upstair)
+        wallShapes.append(wallCorner)
+        wallsPlaced = 0
+        maxIterations = 10
+        while wallsPlaced < minWallsPlaced and maxIterations > 0:
+            maxIterations -= 1
+            for r in range(self.height):
+                for c in range(self.width): 
+                    maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
+                    if maxLayer < 1 and self.RNG.randint(1,100) < 10:
+                        shape = wallShapes[self.RNG.randint(0,len(wallShapes)-1)]
+                        times = self.RNG.randint(0,3)
+                        for t in range(times):
+                            shape = [list(row) for row in zip(*shape[::-1])]
+                        for sr,srows in enumerate(shape):
+                            for sc,scols in enumerate(srows):
+                                pt = [r+sr,c+sc]
+                                if not scols:
+                                    continue
+                                if playerPos and pt == playerPos:
+                                    continue
+                                self.placeEntity(Wall(), pt)
+                                wallsPlaced += 1
 
     def placeEntity(self, entity: Entity, pos, overwrite=False):
         '''
         Places an entity somewhere valid on the map
+        Overwrite set to true will delete any other entities at that position
+        Overwrite set to false will simply append
         '''
         if self.withinMap(pos):
             if not overwrite and self.EntityLayer[pos[0]][pos[1]]:
@@ -189,21 +221,38 @@ class Level:
         else:
             self.Logger.log(f'Failed to place entity -> {entity.name} {pos}')
 
-    def generateStairs(self, downstairPos=[], upstair=True):
+    def generateStairs(self, playerPos=[], downstairPos=[], upstair=True):
         '''
         Adds downstairs if there was a previous upstairs on the level below
         Adds upstairs somewhere random
+        Makes sure there is a path between stair wells
         '''
+        # add stairs
+        upstairPos = [-1,-1]
         if downstairPos:
             self.placeEntity(StairDown(), downstairPos, overwrite=True)
         if upstair:
             upstairPos = [self.RNG.randint(1,self.height-2),
                                             self.RNG.randint(1,self.width-2)]
             self.placeEntity(StairUp(), upstairPos, overwrite=True)
+        else:
+            # no need to path check if last level
             return upstairPos
-        return [-1,-1]
+        # create a path between stair wells
+        start = downstairPos
+        if not downstairPos:
+            start = playerPos
+        end = upstairPos
+        grid = [[max([e.layer for e in el]) for el in row]
+                    for row in self.EntityLayer]
+        pts = dijkstra(grid, tuple(start), tuple(end))
+        for pt in pts:
+            if pt == pts[0] or pt == pts[-1]:
+                continue
+            self.placeEntity(Floor(),pt,overwrite=True)
+        return upstairPos
 
-    def generateWallsFloor(self):
+    def generateSurroundingWallsFloor(self):
         '''
         Adds surrounding walls and floor to a blank entity array
         '''
