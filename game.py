@@ -40,6 +40,8 @@ class Game:
         '''decides if to set up the game for displaying'''
         self.GameState = GameState.PLAYING
         '''controls the state of the game'''
+        self.playerFOV = False
+        '''use player FOV to generate map'''
         self.Logger = Logger()
     
     def displaySetup(self, stdscr: curses.window, timeDelay: int=None):
@@ -211,8 +213,10 @@ class Game:
         '''
         Build buffers according to layer information
         '''
-        # entityLayer = self.LevelManager.getCurrentLevel().EntityLayer
-        entityLayer = self.LevelManager.Player.mentalMap
+        if self.playerFOV:
+            entityLayer = self.LevelManager.Player.mentalMap
+        else:
+            entityLayer = self.LevelManager.getCurrentLevel().EntityLayer
         # go through entity layer
         for r,row in enumerate(entityLayer):
             for c,col in enumerate(row):
@@ -253,6 +257,9 @@ class Game:
             # RESET
             self.stateMachine('reset')
             self.gameSetup()
+        elif event == 'f':
+            # TOGGLE FOV
+            self.playerFOV = not self.playerFOV
         elif event == ' ':
             # DO NOTHING
             return 1
