@@ -66,7 +66,7 @@ class LevelManager:
         '''
         Create the player object and add him to the map
         '''
-        self.Player = Player()
+        self.Player = Player(self.width, self.height)
         self.Player.setPosition(pos, z)
         if len(self.Levels) > 0:
             self.Levels[self.Player.z].addEntity(self.Player)

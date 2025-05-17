@@ -80,6 +80,7 @@ class Game:
         startPos = [1,1]
         self.LevelManager.defaultLevelSetupWalls(startPos)
         self.LevelManager.addPlayer(startPos, 0)
+        self.LevelManager.Player.update(self.LevelManager.getCurrentLevel().EntityLayer)
 
     def start(self, stdscr: curses.window=None):
         '''
@@ -135,7 +136,10 @@ class Game:
                 self.stateMachine('won')
             # update all entities
             self.LevelManager.updateCurrentLevel()
+            # player has moved to a new level
             if self.LevelManager.swapLevels():
+                self.LevelManager.Player.clearMentalMap(
+                    self.LevelManager.getCurrentLevel().EntityLayer)
                 self.MenuManager.DepthMenu.update(self.LevelManager.CurrentZ)
     
     def animations(self):
@@ -207,27 +211,32 @@ class Game:
         '''
         Build buffers according to layer information
         '''
-        entityLayer = self.LevelManager.getCurrentLevel().EntityLayer
+        # entityLayer = self.LevelManager.getCurrentLevel().EntityLayer
+        entityLayer = self.LevelManager.Player.mentalMap
         # go through entity layer
         for r,row in enumerate(entityLayer):
             for c,col in enumerate(row):
                 rw, cl = self.mapPosToScreenPos(r,c)
-                if not entityLayer[r][c]:
-                    continue
                 # find top most entity
-                if len(entityLayer[r][c]) == 1:
-                    idx = 0
+                if not entityLayer[r][c]:
+                    glyph = self.LevelManager.Player.unknownGlyph
+                    color = self.LevelManager.Player.unknownColor
+                elif len(entityLayer[r][c]) == 1:
+                    glyph = entityLayer[r][c][0].glyph
+                    color = entityLayer[r][c][0].color
                 else:
                     idx = max(range(len(entityLayer[r][c])),
                             key=lambda i:entityLayer[r][c][i].layer)
+                    glyph = entityLayer[r][c][idx].glyph
+                    color = entityLayer[r][c][idx].color
                 if not self.boundsCheck(self.ScreenBuffer, rw, cl):
                     continue
                 # add character
-                self.ScreenBuffer[rw][cl] = entityLayer[r][c][idx].glyph
+                self.ScreenBuffer[rw][cl] = glyph
                 if not self.boundsCheck(self.ColorBuffer, rw, cl):
                     continue
                 # add color
-                self.ColorBuffer[rw][cl] = entityLayer[r][c][idx].color
+                self.ColorBuffer[rw][cl] = color
     
     def processEvent(self, event):
         '''
