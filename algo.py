@@ -33,7 +33,64 @@ def dijkstra(grid, start, end):
 
     return None
 
-if __name__ == '__main__':
+MULT = [
+            [1,  0,  0, -1, -1,  0,  0,  1],
+            [0,  1, -1,  0,  0, -1,  1,  0],
+            [0,  1,  1,  0,  0, -1, -1,  0],
+            [1,  0,  0,  1, -1,  0,  0, -1]
+        ]
+
+def RecursiveShadow(grid, pos, radius, blockingLayer=1):
+    pts = set()
+    pts.add((pos))
+    for oct in range(8):
+        castLight(grid, pos[1], pos[0], 1, 1.0, 0.0, radius,
+                  MULT[0][oct], MULT[1][oct], MULT[2][oct], MULT[3][oct], pts,
+                  blockingLayer)
+    return pts
+
+def castLight(grid, cx, cy, row, start, end, radius, xx, xy, yx, yy, pts,
+              blockingLayer):
+    if start < end:
+        return
+    radius_squared = radius*radius
+    for j in range(row, radius+1):
+        dx, dy = -j-1, -j
+        blocked = False
+        while dx <= 0:
+            dx += 1
+            X, Y = cx + dx * xx + dy * xy, cy + dx * yx + dy * yy
+            l_slope, r_slope = (dx-0.5)/(dy+0.5), (dx+0.5)/(dy-0.5)
+            if not (0 <= X < len(grid[0]) and 0 <= Y < len(grid)):
+                continue
+            if start < r_slope:
+                continue
+            elif end > l_slope:
+                break
+            else:
+                if dx*dx + dy*dy < radius_squared:
+                    pts.add((Y,X))
+                if blocked:
+                    if notValid(grid, X, Y, blockingLayer):
+                        new_start = r_slope
+                        continue
+                    else:
+                        blocked = False
+                        start = new_start
+                else:
+                    if notValid(grid, X, Y, blockingLayer) and j < radius:
+                        blocked = True
+                        castLight(grid, cx, cy, j+1, start, l_slope, radius,
+                                  xx, xy, yx, yy, pts, blockingLayer)
+                        new_start = r_slope
+        if blocked:
+            break
+
+def notValid(grid, x, y, blockingLayer):
+    return (x < 0 or y < 0 or x >= len(grid[0]) or y >= len(grid)
+            or grid[y][x] > blockingLayer)
+
+def testDijkstras():
     grid = [
         [0,0,0,0,9],
         [0,0,0,9,9],
@@ -55,3 +112,36 @@ if __name__ == '__main__':
             else:
                 print(col,end='')
         print()
+
+def testRecursiveShadow():
+    grid = [
+        [0,0,0,0,9,0],
+        [0,2,9,9,9,0],
+        [0,2,0,0,0,0],
+        [0,0,0,0,0,0],
+        [0,0,9,9,0,0],
+        [0,0,0,9,0,0]
+    ]
+    start = (2,2)
+    pts = RecursiveShadow(grid, start, 3, 1)
+    print(pts)
+    for r,row in enumerate(grid):
+        for c,col in enumerate(row):
+            if (r,c) == start:
+                print('@', end='')
+            else:
+                print(col,end='')
+        print()
+    print('-----------')
+    for r,row in enumerate(grid):
+        for c,col in enumerate(row):
+            # if (r,c) == start:
+            #     print('@', end='')
+            if (r,c) in pts:
+                print('x',end='')
+            else:
+                print(col,end='')
+        print()
+
+if __name__ == '__main__':
+    testRecursiveShadow()
