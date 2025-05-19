@@ -41,8 +41,12 @@ MULT = [
         ]
 
 def RecursiveShadow(grid, pos, radius, blockingLayer=1):
+    '''
+    Returns a list of points that are viewable from the current position
+    All points are viewable up to the blocking layer value
+    '''
     pts = set()
-    pts.add((pos))
+    pts.add((pos[0],pos[1]))
     for oct in range(8):
         castLight(grid, pos[1], pos[0], 1, 1.0, 0.0, radius,
                   MULT[0][oct], MULT[1][oct], MULT[2][oct], MULT[3][oct], pts,

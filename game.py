@@ -40,7 +40,7 @@ class Game:
         '''decides if to set up the game for displaying'''
         self.GameState = GameState.PLAYING
         '''controls the state of the game'''
-        self.playerFOV = False
+        self.playerFOV = True
         '''use player FOV to generate map'''
         self.Logger = Logger()
     
@@ -49,11 +49,11 @@ class Game:
         Sets up the display for outputting to the screen
         '''
         # initialize engine
-        self.maxCols, self.maxRows = self.Engine.init(stdscr, timeDelay)
-        self.ScreenBuffer = [[' ' for _ in range(self.maxRows-1)] 
-                                    for _ in range(self.maxCols-1)]
-        self.ColorBuffer = [[Colors().white for _ in range(self.maxRows-1)] 
-                                    for _ in range(self.maxCols-1)]
+        self.termRows, self.termCols = self.Engine.init(stdscr, timeDelay)
+        self.ScreenBuffer = [[' ' for _ in range(self.termCols-1)] 
+                                    for _ in range(self.termRows-1)]
+        self.ColorBuffer = [[Colors().white for _ in range(self.termCols-1)] 
+                                    for _ in range(self.termRows-1)]
         self.Animator = Animator()
 
     def noDisplaySetup(self):
