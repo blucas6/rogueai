@@ -290,6 +290,9 @@ class Level:
             for c in range(self.width):
                 maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
                 if (maxLayer == 0 and self.RNG.randint(1,100) < 3):
-                    m = Jelly()
+                    if self.RNG.randint(1,2) == 1:
+                        m = Jelly()
+                    else:
+                        m = Newt()
                     m.setPosition((r,c), self.z)
                     self.EntityLayer[r][c].append(m)

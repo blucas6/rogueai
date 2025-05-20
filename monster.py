@@ -11,7 +11,6 @@ class Jelly(Entity):
         super().__init__('Jelly', 'j', Colors().blue, 1)
         self.Health = Health(3)
         self.Attack = Attack('Splash', 5)
-        '''health bar'''
 
     def update(self, entityLayer):
         pass
@@ -51,3 +50,12 @@ class Jelly(Entity):
                         if entity.Health.changeHealth(-1*self.Attack.damage):
                             entity.remove(entityLayer)
         super().remove(entityLayer)
+
+class Newt(Entity):
+    '''
+    Newt Entity
+    '''
+    def __init__(self):
+        super().__init__('Newt', 'n', Colors().yellow, 1)
+        self.Health = Health(3)
+        self.Attack = Attack('Bite', 1)
