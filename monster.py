@@ -20,6 +20,7 @@ class Jelly(Entity):
         '''
         Generate the explosion on death
         '''
+        self.Messager.addMessage('It explodes!')
         frames = {}
         frames['0'] = [
             ['','' ,''],
