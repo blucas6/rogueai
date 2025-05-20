@@ -5,7 +5,7 @@ from algo import RecursiveShadow
 class Player(Entity):
     def __init__(self, rows, cols):
         super().__init__('Player', '@', Colors().white, 1)
-        self.Health = Health(100)
+        self.Health = Health(20)
         '''Health component'''
         self.Attack = Attack('Punch', 1)
         '''Attack component'''

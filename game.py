@@ -130,11 +130,18 @@ class Game:
         self.Energy += self.processEvent(event)
         if self.Energy > 0:
             self.Energy -= 1
+            # update health menu
+            self.MenuManager.HealthMenu.update(
+                self.LevelManager.Player.Health.currentHealth,
+                self.LevelManager.Player.Health.maxHealth)
             # clear current message
             self.MenuManager.MessageMenu.clear()
             # check for win condition
             if not self.GameState == GameState.WON and self.win():
                 self.Messager.addMessage('You won!')
+                self.stateMachine('won')
+            elif not self.GameState == GameState.WON and self.lose():
+                self.Messager.addMessage('You died!')
                 self.stateMachine('won')
             # update all entities
             self.LevelManager.updateCurrentLevel()
@@ -142,6 +149,7 @@ class Game:
             if self.LevelManager.swapLevels():
                 self.LevelManager.Player.clearMentalMap(
                     self.LevelManager.getCurrentLevel().EntityLayer)
+                # update level menu on level change
                 self.MenuManager.DepthMenu.update(self.LevelManager.CurrentZ)
     
     def animations(self):
@@ -197,6 +205,14 @@ class Game:
         if self.LevelManager.Player.z == self.LevelManager.TotalLevels-1:
             return True
         return False
+    
+    def lose(self):
+        '''
+        Returns if the game is lost
+        '''
+        if self.LevelManager.Player.Health.alive:
+            return False
+        return True
 
     def boundsCheck(self, buffer, r, c):
         '''

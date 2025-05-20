@@ -54,8 +54,8 @@ class Menu:
         '''max length for the text string'''
         self.textSave = ''
         '''previously used text message'''
-        self.update()
         self.Logger = Logger()
+        self.update()
 
     def update(self, *args, **kwargs):
         '''
@@ -117,6 +117,16 @@ class MessageMenu(Menu):
         '''clears the current msg to allow grabbing a new one'''
         self.text = ''
 
+class HealthMenu(Menu):
+    '''Displays the player health'''
+    def __init__(self, origin: tuple, length: tuple):
+        self.HealthBarLength = length-2
+        super().__init__(origin, length)
+
+    def update(self, health=10, maxhealth=10):
+        amount = round((self.HealthBarLength * health / maxhealth))
+        self.text = '['+amount*'\u2588'+(self.HealthBarLength-amount)*' '+']'
+
 class GameState(Enum):
     PLAYING = 1
     WON = 2
@@ -131,9 +141,11 @@ class MenuManager:
         self.TurnMenu = TurnMenu((20,0), 10)
         self.DepthMenu = DepthMenu((20,10), 20)
         self.MessageMenu = MessageMenu((0,0), 50)
+        self.HealthMenu = HealthMenu((21,0), 20)
 
     def display(self, screenBuffer):
         '''Displays all menus to screen buffer'''
         self.TurnMenu.display(screenBuffer)
         self.DepthMenu.display(screenBuffer)
         self.MessageMenu.display(screenBuffer)
+        self.HealthMenu.display(screenBuffer)
