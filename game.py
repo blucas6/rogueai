@@ -130,10 +130,6 @@ class Game:
         self.Energy += self.processEvent(event)
         if self.Energy > 0:
             self.Energy -= 1
-            # update health menu
-            self.MenuManager.HealthMenu.update(
-                self.LevelManager.Player.Health.currentHealth,
-                self.LevelManager.Player.Health.maxHealth)
             # clear current message
             self.MenuManager.MessageMenu.clear()
             # check for win condition
@@ -151,6 +147,10 @@ class Game:
                     self.LevelManager.getCurrentLevel().EntityLayer)
                 # update level menu on level change
                 self.MenuManager.DepthMenu.update(self.LevelManager.CurrentZ)
+            # update health menu
+            self.MenuManager.HealthMenu.update(
+                self.LevelManager.Player.Health.currentHealth,
+                self.LevelManager.Player.Health.maxHealth)
     
     def animations(self):
         '''

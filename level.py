@@ -83,7 +83,8 @@ class LevelManager:
                 if not entityList:
                     continue
                 for idx,entity in enumerate(entityList):
-                    entity.update(level.EntityLayer)
+                    # call entity update
+                    entity.update(level.EntityLayer, self.Player.pos)
                     # move entity to another level
                     if (entity.z != self.CurrentZ and 
                                 entity.z < self.TotalLevels):
@@ -294,5 +295,5 @@ class Level:
                         m = Jelly()
                     else:
                         m = Newt()
-                    m.setPosition((r,c), self.z)
+                    m.setPosition([r,c], self.z)
                     self.EntityLayer[r][c].append(m)

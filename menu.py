@@ -24,6 +24,22 @@ class Messager:
         Adds a msg to the msg queue
         '''
         self.MsgQueue.append(msg)
+    
+    def addDamageMessage(self, nameAttack: str, nameDefend: str):
+        if nameAttack == 'Player':
+            self.MsgQueue.append(f'You hit the {nameDefend}')
+        elif nameDefend == 'Player':
+            self.MsgQueue.append(f'The {nameAttack} hits you')
+        else:
+            self.MsgQueue.append(f'The {nameAttack} hits the {nameDefend}')
+    
+    def addKillMessage(self, nameAttack: str, nameDefend: str):
+        if nameAttack == 'Player':
+            self.MsgQueue.append(f'You kill the {nameDefend}!')
+        elif nameDefend == 'Player':
+            self.MsgQueue.append(f'The {nameAttack} kills you!')
+        else:
+            self.MsgQueue.append(f'The {nameAttack} kills the {nameDefend}!')
 
     def popMessage(self, blocking=True):
         '''

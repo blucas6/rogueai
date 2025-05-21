@@ -1,7 +1,7 @@
-from entity import Entity, Health, ONE_LAYER_CIRCLE, Attack
+from entity import Entity, ONE_LAYER_CIRCLE 
 from colors import Colors
 from animation import Animator, Animation
-from menu import Messager
+from component import *
 
 class Jelly(Entity):
     '''
@@ -10,10 +10,7 @@ class Jelly(Entity):
     def __init__(self):
         super().__init__('Jelly', 'j', Colors().blue, 1)
         self.Health = Health(3)
-        self.Attack = Attack('Splash', 5)
-
-    def update(self, entityLayer):
-        pass
+        self.Attack = Attack('Splash', 5, Alignemnt.CHAOTIC)
 
     def remove(self, entityLayer):
         '''
@@ -58,4 +55,11 @@ class Newt(Entity):
     def __init__(self):
         super().__init__('Newt', 'n', Colors().yellow, 1)
         self.Health = Health(3)
-        self.Attack = Attack('Bite', 1)
+        self.Attack = Attack('Bite', 1, Alignemnt.CHAOTIC)
+        self.Brain = Brain(5)
+
+    def update(self, entityLayer, playerPos):
+        self.doAction(
+            self.Brain.input(self.pos,playerPos),
+            entityLayer
+        )

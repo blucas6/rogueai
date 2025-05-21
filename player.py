@@ -1,4 +1,5 @@
-from entity import Entity, Attack, Health, ONE_LAYER_CIRCLE
+from entity import Entity, ONE_LAYER_CIRCLE
+from component import *
 from colors import Colors
 from algo import RecursiveShadow
 
@@ -7,7 +8,7 @@ class Player(Entity):
         super().__init__('Player', '@', Colors().white, 1)
         self.Health = Health(20)
         '''Health component'''
-        self.Attack = Attack('Punch', 1)
+        self.Attack = Attack('Punch', 1, Alignemnt.LAWFUL)
         '''Attack component'''
         self.mentalMapSize = [rows, cols]
         '''Size of the mental map for FOV'''
@@ -24,7 +25,7 @@ class Player(Entity):
         self.unknownColor = Colors().white
         '''Color of glyph for unexplored territory'''
 
-    def update(self, entityLayer):
+    def update(self, entityLayer, *args):
         # pts = self.getSimpleFOV()
         pts = self.getFOV(entityLayer)
         if not self.fovMemory:

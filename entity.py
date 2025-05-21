@@ -58,7 +58,7 @@ class Entity:
             return True
         return False
 
-    def update(self, entityLayer):
+    def update(self, *args, **kwargs):
         '''default update entity'''
         pass
 
@@ -73,19 +73,29 @@ class Entity:
         moves = ONE_LAYER_CIRCLE
         row = self.pos[0] + moves[key-1][0]
         col = self.pos[1] + moves[key-1][1]
+        self.Logger.log(f'{self.name} m:{(row,col)}')
         if not self.validSpace(entityLayer, row, col):
             return
         # check if movement triggers an attack
+        if not self.attack(entityLayer, row, col):
+            # no attack, move normally
+            self.move(row, col, entityLayer)
+    
+    def attack(self, entityLayer, row, col):
         for entity in entityLayer[row][col]:
-            if hasattr(entity, 'Health') and hasattr(self, 'Attack'):
+            if (entity is not self and 
+                hasattr(entity, 'Health') and
+                hasattr(self, 'Attack') and 
+                hasattr(entity, 'Attack') and
+                entity.Attack.alignment != self.Attack.alignment):
                 if entity.Health.changeHealth(-1*self.Attack.damage):
                     self.Messager.addMessage(f'You kill the {entity.name}!')
                     entity.remove(entityLayer)
                 else:
-                    self.Messager.addMessage(f'You hit the {entity.name}')
-                return
-        # no attack, move normally
-        self.move(row, col, entityLayer)
+                    self.Messager.addDamageMessage(self.name, entity.name)
+                # only exit if an attack was triggered
+                return True
+        return False
     
     def moveZ(self, event, entityLayer):
         '''
@@ -106,45 +116,12 @@ class Entity:
         '''
         Entrance for entity actions
         '''
+        self.Logger.log(f'{self.name} a:{event}')
         if event.isdigit():
             self.movement(int(event), entityLayer)
         elif event == '<' or event == '>':
             if not self.moveZ(event, entityLayer):
                 self.Messager.addMessage('There are no stairs here')
-
-class Health:
-    '''
-    Health component, if an entity needs a health bar
-    '''
-    def __init__(self, health):
-        self.maxHealth = health
-        '''Maximum for the health bar'''
-        self.currentHealth = health
-        '''Counter for current health'''
-        self.alive = True
-        '''True if health bar is above 0'''
-        self.Logger = Logger()
-
-    def changeHealth(self, amount):
-        '''
-        Changes the health bar by an amount
-        Returns true if health change causes death
-        '''
-        self.currentHealth += amount
-        if self.alive and self.currentHealth <= 0:
-            self.alive = False
-            return True
-        return False
-
-class Attack:
-    '''
-    Attack component, if an entity can deal damage
-    '''
-    def __init__(self, name, damage):
-        self.name = name
-        '''name of the attack'''
-        self.damage = damage
-        '''amount of damage the attack does'''
 
 class Wall(Entity):
     '''Wall entity'''
