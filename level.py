@@ -5,156 +5,6 @@ from logger import Logger
 import random
 from algo import dijkstra
 
-class LevelManager:
-    '''
-    LevelManager class contains all level objects and dictates what the game
-    class will display
-    '''
-    def __init__(self, rng, height: int=0, width: int=0, origin: tuple=(0,0),
-        levels=0):
-        self.height = height
-        '''total height (rows) in the map'''
-        self.width = width
-        '''total width (cols) in the map'''
-        self.origin = origin
-        '''top left corner of map in relation to the screen buffer'''
-        self.Levels = []
-        '''holds all level objects'''
-        self.TotalLevels = levels
-        '''how many levels to hold'''
-        self.CurrentZ = 0
-        '''current level indicator'''
-        self.Player = None
-        '''player object'''
-        self.Logger = Logger()
-        for l in range(self.TotalLevels):
-            self.Levels.append(Level(self.height, self.width, l, rng))
-        
-    def defaultLevelSetup(self, playerPos):
-        '''
-        Load a default map on all levels
-        '''
-        downstairPos = []
-        for level in self.Levels:
-            if level == self.Levels[-1]:
-                downstairPos = level.default(
-                    downstairPos=downstairPos, upstair=False)
-            elif level == self.Levels[0]:
-                downstairPos = level.default(
-                    playerPos=playerPos, downstairPos=downstairPos)
-            else:
-                downstairPos = level.default(downstairPos=downstairPos)
-            level.generateMonsters()
-
-    def defaultLevelSetupWalls(self, playerPos):
-        '''
-        Load a default map with some walls
-        '''
-        downstairPos = []
-        for level in self.Levels:
-            if level == self.Levels[-1]:
-                downstairPos = level.defaultWalls(
-                    downstairPos=downstairPos, upstair=False)
-            elif level == self.Levels[0]:
-                downstairPos = level.defaultWalls(
-                    playerPos=playerPos, downstairPos=downstairPos)
-            else:
-                downstairPos = level.defaultWalls(downstairPos=downstairPos)
-            level.generateMonsters()
-
-    def addPlayer(self, pos: list, z: int):
-        '''
-        Create the player object and add him to the map
-        '''
-        self.Player = Player(self.height, self.width)
-        self.Player.setPosition(pos, z)
-        if len(self.Levels) > 0:
-            self.Levels[self.Player.z].addEntity(self.Player)
-
-    def updateCurrentLevel(self):
-        '''
-        Go through current level layer and update entities, if an entity has 
-        updated its own position, move it to the right spot
-        Update the player first before everything
-        Run throught entity layer again to correct any positional changes
-        '''
-        level = self.Levels[self.CurrentZ]
-        # update player positioning first
-        self.fixPlayerPosition(level)
-        # update all entities normally
-        for r,row in enumerate(level.EntityLayer):
-            for c,entityList in enumerate(row):
-                if not entityList:
-                    continue
-                for idx,entity in enumerate(entityList):
-                    # call entity update
-                    if not self.checkForDeath(entity, level, r, c, idx):
-                        entity.update(level.EntityLayer, self.Player.pos)
-        # move all entities to the correct spot
-        for r,row in enumerate(level.EntityLayer):
-            for c,entityList in enumerate(row):
-                if not entityList:
-                    continue
-                for idx,entity in enumerate(entityList):
-                    if not self.checkForDeath(entity, level, r, c, idx):
-                        # move entity to correct position
-                        self.fixEntityPosition(entity, level, r, c, idx)
-
-    def checkForDeath(self, entity, level, r, c, idx):
-        '''
-        Checks if an entity is still valid on the level, otherwise it will
-        remove it
-        '''
-        # remove entity from the level
-        if not entity.isActive:
-            del level.EntityLayer[r][c][idx]
-            return True
-        return False
-    
-    def fixEntityPosition(self, entity, level, r, c, idx):
-        '''
-        Moves an entity to the correct spot in the Entity Layer according
-        to its own position
-        '''
-        # move entity to another level
-        if (entity.z != self.CurrentZ and 
-                    entity.z < self.TotalLevels):
-            if self.Levels[entity.z].addEntity(entity):
-                del level.EntityLayer[r][c][idx]
-        # move entity around current level
-        elif (entity.pos[0] != r or entity.pos[1] != c):
-            if level.addEntity(entity):
-                del level.EntityLayer[r][c][idx]
-    
-    def fixPlayerPosition(self, level):
-        '''
-        Finds the Player in the Entity Layer and moves it to its correct spot
-        according to its own position
-        '''
-        for r,row in enumerate(level.EntityLayer):
-            for c,entityList in enumerate(row):
-                if not entityList:
-                    continue
-                for idx,entity in enumerate(entityList):
-                    if entity.name == 'Player':
-                        self.fixEntityPosition(entity, level, r, c, idx)
-                        return
-
-    def swapLevels(self):
-        '''
-        Check if the Player object has moved to a different level
-        '''
-        if self.Player.z != self.CurrentZ:
-            self.CurrentZ = self.Player.z
-            return True
-        return False
-
-    def getCurrentLevel(self):
-        '''
-        Returns the current level object
-        '''
-        return self.Levels[self.CurrentZ]
-
 class Level:
     '''
     Level objects contain the map and handle the entity layer
@@ -251,16 +101,19 @@ class Level:
         Overwrite set to true will delete any other entities at that position
         Overwrite set to false will simply append
         '''
+        r = pos[0]
+        c = pos[1]
         if self.withinMap(pos):
-            if not overwrite and self.EntityLayer[pos[0]][pos[1]]:
-                maxLayer = max([x.layer for x in self.EntityLayer[pos[0]][pos[1]]])
+            if not overwrite and self.EntityLayer[r][c]:
+                maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
                 if entity.layer <= maxLayer:
                     return                 
-            entity.setPosition(pos, self.z)
             if overwrite:
-                self.EntityLayer[pos[0]][pos[1]] = [entity]
+                self.EntityLayer[r][c] = [entity]
+                entity.setPosition(pos, self.z, 0)
             else:
-                self.EntityLayer[pos[0]][pos[1]].append(entity)
+                self.EntityLayer[r][c].append(entity)
+                entity.setPosition(pos, self.z, len(self.EntityLayer[r][c])-1)
         else:
             self.Logger.log(f'Failed to place entity -> {entity.name} {pos}')
 
@@ -316,18 +169,6 @@ class Level:
             return True
         return False
 
-    def addEntity(self, entity: Entity):
-        '''
-        Adds an entity to the layer according to its position
-        '''
-        if self.withinMap(entity.pos):
-            self.EntityLayer[entity.pos[0]][entity.pos[1]].append(entity)
-            return True
-        else:
-            self.Logger.log(f'Invalid addition to entity layer!')
-            self.Logger.log(f'   {entity.name} @ {entity.pos} z:{entity.z}')
-            return False
-
     def generateMonsters(self):
         for r in range(self.height):
             for c in range(self.width):
@@ -337,5 +178,160 @@ class Level:
                         m = Jelly()
                     else:
                         m = Newt()
-                    m.setPosition([r,c], self.z)
-                    self.EntityLayer[r][c].append(m)
+                    self.placeEntity(m, [r,c])
+
+class LevelManager:
+    '''
+    LevelManager class contains all level objects and dictates what the game
+    class will display
+    '''
+    def __init__(self, rng, height: int=0, width: int=0, origin: tuple=(0,0),
+        levels=0):
+        self.height = height
+        '''total height (rows) in the map'''
+        self.width = width
+        '''total width (cols) in the map'''
+        self.origin = origin
+        '''top left corner of map in relation to the screen buffer'''
+        self.Levels = []
+        '''holds all level objects'''
+        self.TotalLevels = levels
+        '''how many levels to hold'''
+        self.CurrentZ = 0
+        '''current level indicator'''
+        self.Player = None
+        '''player object'''
+        self.Logger = Logger()
+        for l in range(self.TotalLevels):
+            self.Levels.append(Level(self.height, self.width, l, rng))
+        
+    def defaultLevelSetup(self, playerPos):
+        '''
+        Load a default map on all levels
+        '''
+        downstairPos = []
+        for level in self.Levels:
+            if level == self.Levels[-1]:
+                downstairPos = level.default(
+                    downstairPos=downstairPos, upstair=False)
+            elif level == self.Levels[0]:
+                downstairPos = level.default(
+                    playerPos=playerPos, downstairPos=downstairPos)
+            else:
+                downstairPos = level.default(downstairPos=downstairPos)
+            level.generateMonsters()
+
+    def defaultLevelSetupWalls(self, playerPos):
+        '''
+        Load a default map with some walls
+        '''
+        downstairPos = []
+        for level in self.Levels:
+            if level == self.Levels[-1]:
+                downstairPos = level.defaultWalls(
+                    downstairPos=downstairPos, upstair=False)
+            elif level == self.Levels[0]:
+                downstairPos = level.defaultWalls(
+                    playerPos=playerPos, downstairPos=downstairPos)
+            else:
+                downstairPos = level.defaultWalls(downstairPos=downstairPos)
+            level.generateMonsters()
+
+    def addPlayer(self, pos: list, z: int):
+        '''
+        Create the player object and add him to the map
+        '''
+        self.Player = Player(self.height, self.width)
+        if len(self.Levels) > 0 and z < len(self.Levels):
+            self.Levels[z].placeEntity(self.Player, pos)
+        else:
+            self.Logger.log(f'Invalid placement of player!')
+
+    def updateCurrentLevel(self):
+        '''
+        Go through current level layer and update entities, if an entity has 
+        updated its own position, move it to the right spot
+        Update the player first before everything
+        Run throught entity layer again to correct any positional changes
+        '''
+        level = self.Levels[self.CurrentZ]
+        # update player first
+        if not self.removeIfDead(self.Player, level):
+            self.fixPlayerPosition(level)
+        # get list of all entities to update
+        entityUpdateList = [entity for row in level.EntityLayer 
+                            for entityList in row for entity in entityList]
+        for entity in entityUpdateList:
+            # call entity update
+            if not self.removeIfDead(entity, level):
+                entity.update(level.EntityLayer, self.Player.pos)
+                # move entity to correct position
+                self.fixEntityPosition(entity, level)
+
+    def removeIfDead(self, entity: Entity, level: Level):
+        '''
+        Checks if an entity is still valid on the level, otherwise it will
+        remove it
+        '''
+        # remove entity from the level
+        if not entity.isActive:
+            r = entity.EntityLayerPos[0]
+            c = entity.EntityLayerPos[1]
+            idx = entity.EntityLayerPos[2]
+            try:
+                del level.EntityLayer[r][c][idx]
+            except Exception as e:
+                self.Logger.log(f'Failed to remove {entity.name}:{r},{c},{idx}')
+            return True
+        return False
+    
+    def fixEntityPosition(self, entity: Entity, level: Level):
+        '''
+        Moves an entity to the correct spot in the Entity Layer according
+        to its own position, fixes the entity's entityLayerPos coords
+        '''
+        # move entity around current level
+        r = entity.EntityLayerPos[0]
+        c = entity.EntityLayerPos[1]
+        idx = entity.EntityLayerPos[2]
+        if (entity.pos[0] != r or entity.pos[1] != c):
+            # remove entity at old spot
+            del level.EntityLayer[r][c][idx]
+            # place new entity and update r, c, idx
+            level.placeEntity(entity, entity.pos)
+        # move entity to another level
+        if (entity.z != self.CurrentZ and 
+                    entity.z < self.TotalLevels):
+            # remove entity at old spot
+            del level.EntityLayer[r][c][idx]
+            # place entity and update r, c, idx
+            self.Levels[entity.z].placeEntity(entity, entity.pos)
+    
+    def fixPlayerPosition(self, level):
+        '''
+        Finds the Player in the Entity Layer and moves it to its correct spot
+        according to its own position
+        '''
+        for r,row in enumerate(level.EntityLayer):
+            for c,entityList in enumerate(row):
+                if not entityList:
+                    continue
+                for idx,entity in enumerate(entityList):
+                    if entity.name == 'Player':
+                        self.fixEntityPosition(entity, level)
+                        return
+
+    def swapLevels(self):
+        '''
+        Check if the Player object has moved to a different level
+        '''
+        if self.Player.z != self.CurrentZ:
+            self.CurrentZ = self.Player.z
+            return True
+        return False
+
+    def getCurrentLevel(self):
+        '''
+        Returns the current level object
+        '''
+        return self.Levels[self.CurrentZ]

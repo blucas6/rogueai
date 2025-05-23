@@ -1,6 +1,7 @@
 from colors import Colors
 from logger import Logger
 from menu import Messager
+import itertools
 
 ONE_LAYER_CIRCLE = [(1,-1),(1,0),(1,1),(0,-1),(0,0),(0,1),(-1,-1),(-1,0),(-1,1)]
 
@@ -8,7 +9,11 @@ class Entity:
     '''
     Base entity class for all objects
     '''
+    _id_gen = itertools.count(1)
+    '''shared ID generator'''
     def __init__(self, name, glyph, color, layer):
+        self.id = next(Entity._id_gen)
+        '''unique id'''
         self.name = name
         '''name of entity'''
         self.glyph = glyph
@@ -25,14 +30,17 @@ class Entity:
         '''connection to message queue'''
         self.isActive = True
         '''if false, level manager will remove the entity from the game'''
+        self.EntityLayerPos = [-1, -1, -1]
+        '''xyz coordinates in the Entity Layer, set by level manager'''
         self.Logger = Logger()
 
-    def setPosition(self, pos: list, zlevel: int):
+    def setPosition(self, pos: list, zlevel: int, idx: int):
         '''
         Sets the position of the entity
         '''
         self.pos = pos
         self.z = zlevel
+        self.EntityLayerPos = [pos[0], pos[1], -1]
     
     def remove(self, entityLayer):
         '''
@@ -89,7 +97,7 @@ class Entity:
                 hasattr(entity, 'Attack') and
                 entity.Attack.alignment != self.Attack.alignment):
                 if entity.Health.changeHealth(-1*self.Attack.damage):
-                    self.Messager.addMessage(f'You kill the {entity.name}!')
+                    self.Messager.addKillMessage(self.name, entity.name)
                     entity.remove(entityLayer)
                 else:
                     self.Messager.addDamageMessage(self.name, entity.name)

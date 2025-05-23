@@ -139,9 +139,6 @@ class Game:
             if not self.GameState == GameState.WON and self.win():
                 self.Messager.addMessage('You won!')
                 self.stateMachine('won')
-            elif not self.GameState == GameState.WON and self.lose():
-                self.Messager.addMessage('You died!')
-                self.stateMachine('won')
             # update all entities
             self.LevelManager.updateCurrentLevel()
             # player has moved to a new level
@@ -154,6 +151,10 @@ class Game:
             self.MenuManager.HealthMenu.update(
                 self.LevelManager.Player.Health.currentHealth,
                 self.LevelManager.Player.Health.maxHealth)
+            # check for death
+            if not self.GameState == GameState.WON and self.lose():
+                self.Messager.addMessage('You died!')
+                self.stateMachine('won')
     
     def animations(self):
         '''
