@@ -126,9 +126,12 @@ class Game:
         '''
         Execute one loop in the game loop
         '''
-        # process events
-        self.Energy += self.processEvent(event)
-        if self.Energy > 0:
+        # process events (continuously polling)
+        energy = self.processEvent(event)
+        if energy == 0:
+            self.MenuManager.MessageMenu.clear()
+        elif energy > 0:
+            self.Energy += energy
             self.Energy -= 1
             # clear current message
             self.MenuManager.MessageMenu.clear()
@@ -260,15 +263,17 @@ class Game:
     
     def processEvent(self, event):
         '''
-        Process key press event from engine, returns energy amount
+        Process key press event from engine
+        -1 does not count as an action
+        0 counts as a clearing action (msg queue)
+        1 counts as a energy for updating entities
         '''
         # disregard empty events
         if not event:
-            return 0
+            return -1
         if event == chr(ascii.ESC) or event == 'q':
             # QUIT
             self.running = False
-            return 0
         elif event == 'r':
             # RESET
             self.stateMachine('reset')
@@ -277,8 +282,8 @@ class Game:
             # TOGGLE FOV
             self.playerFOV = not self.playerFOV
         elif event == ' ':
-            # DO NOTHING
-            return 1
+            # DO NOTHING - clears msg queue
+            return 0
         elif self.GameState == GameState.PLAYING:
             # PLAYER ACTION
             # update turn counter
@@ -286,7 +291,8 @@ class Game:
             self.LevelManager.Player.doAction(event,
                 self.LevelManager.getCurrentLevel().EntityLayer)
             return 1
-        return 0
+        # Defaults to returning -1 for no action
+        return -1
 
     def stateMachine(self, event):
         if event == 'msgQFull' and self.GameState == GameState.PLAYING:

@@ -59,6 +59,7 @@ class Newt(Entity):
         self.Brain = Brain(5)
 
     def update(self, entityLayer, playerPos):
+        self.Logger.log('newt updating')
         self.doAction(
             self.Brain.input(self.pos,playerPos),
             entityLayer

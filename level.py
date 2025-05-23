@@ -75,29 +75,71 @@ class LevelManager:
         '''
         Go through current level layer and update entities, if an entity has 
         updated its own position, move it to the right spot
+        Update the player first before everything
+        Run throught entity layer again to correct any positional changes
         '''
         level = self.Levels[self.CurrentZ]
+        # update player positioning first
+        self.fixPlayerPosition(level)
+        # update all entities normally
         for r,row in enumerate(level.EntityLayer):
-            for c,col in enumerate(row):
-                entityList = level.EntityLayer[r][c]
+            for c,entityList in enumerate(row):
                 if not entityList:
                     continue
                 for idx,entity in enumerate(entityList):
                     # call entity update
-                    entity.update(level.EntityLayer, self.Player.pos)
-                    # move entity to another level
-                    if (entity.z != self.CurrentZ and 
-                                entity.z < self.TotalLevels):
-                        if self.Levels[entity.z].addEntity(entity):
-                            del level.EntityLayer[r][c][idx]
-                    # move entity around current level
-                    elif (entity.pos[0] != r or entity.pos[1] != c):
-                        if level.addEntity(entity):
-                            del level.EntityLayer[r][c][idx]
-                    # remove entity from the level
-                    if not entity.isActive:
-                        del level.EntityLayer[r][c][idx]
+                    if not self.checkForDeath(entity, level, r, c, idx):
+                        entity.update(level.EntityLayer, self.Player.pos)
+        # move all entities to the correct spot
+        for r,row in enumerate(level.EntityLayer):
+            for c,entityList in enumerate(row):
+                if not entityList:
+                    continue
+                for idx,entity in enumerate(entityList):
+                    if not self.checkForDeath(entity, level, r, c, idx):
+                        # move entity to correct position
+                        self.fixEntityPosition(entity, level, r, c, idx)
+
+    def checkForDeath(self, entity, level, r, c, idx):
+        '''
+        Checks if an entity is still valid on the level, otherwise it will
+        remove it
+        '''
+        # remove entity from the level
+        if not entity.isActive:
+            del level.EntityLayer[r][c][idx]
+            return True
+        return False
     
+    def fixEntityPosition(self, entity, level, r, c, idx):
+        '''
+        Moves an entity to the correct spot in the Entity Layer according
+        to its own position
+        '''
+        # move entity to another level
+        if (entity.z != self.CurrentZ and 
+                    entity.z < self.TotalLevels):
+            if self.Levels[entity.z].addEntity(entity):
+                del level.EntityLayer[r][c][idx]
+        # move entity around current level
+        elif (entity.pos[0] != r or entity.pos[1] != c):
+            if level.addEntity(entity):
+                del level.EntityLayer[r][c][idx]
+    
+    def fixPlayerPosition(self, level):
+        '''
+        Finds the Player in the Entity Layer and moves it to its correct spot
+        according to its own position
+        '''
+        for r,row in enumerate(level.EntityLayer):
+            for c,entityList in enumerate(row):
+                if not entityList:
+                    continue
+                for idx,entity in enumerate(entityList):
+                    if entity.name == 'Player':
+                        self.fixEntityPosition(entity, level, r, c, idx)
+                        return
+
     def swapLevels(self):
         '''
         Check if the Player object has moved to a different level
