@@ -56,11 +56,10 @@ class Newt(Entity):
         super().__init__('Newt', 'n', Colors().yellow, 1)
         self.Health = Health(3)
         self.Attack = Attack('Bite', 1, Alignemnt.CHAOTIC)
-        self.Brain = Brain(5)
+        self.Brain = Brain(5, 1)
 
     def update(self, entityLayer, playerPos):
-        self.Logger.log('newt updating')
         self.doAction(
-            self.Brain.input(self.pos,playerPos),
+            self.Brain.input(self.pos,playerPos, entityLayer),
             entityLayer
         )

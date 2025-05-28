@@ -124,7 +124,6 @@ class Entity:
         '''
         Entrance for entity actions
         '''
-        self.Logger.log(f'{self.name} a:{event}')
         if event.isdigit():
             self.movement(int(event), entityLayer)
         elif event == '<' or event == '>':

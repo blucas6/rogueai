@@ -1,38 +1,56 @@
 from logger import Logger
 import math
 from enum import Enum
+from algo import RecursiveShadow
 
 class Brain:
     '''
     Brain component, if an entity needs to make decisions
     '''
-    def __init__(self, sightRange):
+    def __init__(self, sightRange, blockingLayer):
         self.sightRange = sightRange
+        '''How far FOV will check'''
+        self.blockingLayer = blockingLayer
+        '''Highest level (exclusive) FOV will see through'''
 
-    def input(self, myPos, playerPos):
-        distance = math.hypot(playerPos[0]-myPos[0], playerPos[1]-myPos[1])
-        Logger().log(distance)
-        if (distance <= self.sightRange):
-            if playerPos[0] > myPos[0]:
-                if playerPos[1] > myPos[1]:
-                    return '3'
-                elif playerPos[1] < myPos[1]:
-                    return '1'
-                else:
-                    return '2'
-            elif playerPos[0] < myPos[0]:
-                if playerPos[1] > myPos[1]:
-                    return '9'
-                elif playerPos[1] < myPos[1]:
-                    return '7'
-                else:
-                    return '8'
-            else:
-                if playerPos[1] > myPos[1]:
-                    return '6'
-                elif playerPos[1] < myPos[1]:
-                    return '4'
+    def input(self, myPos, playerPos, entityLayer):
+        '''Returns an action'''
+        pts = self.getFOVFromEntityLayer(entityLayer, myPos)
+        if tuple(playerPos) in pts:
+            return self.moveTowardsPoint(myPos, playerPos)
         return '5'
+    
+    def moveTowardsPoint(self, myPos, otherPos):
+        if otherPos[0] > myPos[0]:
+            if otherPos[1] > myPos[1]:
+                return '3'
+            elif otherPos[1] < myPos[1]:
+                return '1'
+            else:
+                return '2'
+        elif otherPos[0] < myPos[0]:
+            if otherPos[1] > myPos[1]:
+                return '9'
+            elif otherPos[1] < myPos[1]:
+                return '7'
+            else:
+                return '8'
+        else:
+            if otherPos[1] > myPos[1]:
+                return '6'
+            elif otherPos[1] < myPos[1]:
+                return '4'
+        return '5'
+    
+    def getFOVFromEntityLayer(self, entityLayer, currPos):
+        '''Use FOV algorithm to get which points are visible'''
+        grid = [[max([x.layer for x in entityLayer[r][c]])
+                 for c in range(len(entityLayer[r]))]
+                    for r in range(len(entityLayer))]
+        return RecursiveShadow(grid,
+                               currPos,
+                               self.sightRange,
+                               self.blockingLayer)
 
 class Health:
     '''

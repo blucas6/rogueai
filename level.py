@@ -280,6 +280,7 @@ class LevelManager:
             idx = entity.EntityLayerPos[2]
             try:
                 del level.EntityLayer[r][c][idx]
+                self.Logger.log(f'REMOVING: {entity.name}')
             except Exception as e:
                 self.Logger.log(f'Failed to remove {entity.name}:{r},{c},{idx}')
             return True
