@@ -296,6 +296,7 @@ class Game:
         return -1
 
     def stateMachine(self, event):
+        '''Change the game state'''
         if event == 'msgQFull' and self.GameState == GameState.PLAYING:
             # too many messages to display, block user input until resolved
             self.GameState = GameState.PAUSEONMSG

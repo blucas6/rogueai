@@ -21,6 +21,7 @@ class Brain:
         return '5'
     
     def moveTowardsPoint(self, myPos, otherPos):
+        '''Moves towards a point on the map'''
         if otherPos[0] > myPos[0]:
             if otherPos[1] > myPos[1]:
                 return '3'
@@ -76,7 +77,7 @@ class Health:
             return True
         return False
     
-class Alignemnt(Enum):
+class Alignment(Enum):
     LAWFUL = 0,
     CHAOTIC = 1
 
@@ -84,7 +85,7 @@ class Attack:
     '''
     Attack component, if an entity can deal damage
     '''
-    def __init__(self, name, damage, alignment: Alignemnt):
+    def __init__(self, name, damage, alignment: Alignment):
         self.name = name
         '''name of the attack'''
         self.damage = damage

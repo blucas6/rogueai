@@ -10,7 +10,7 @@ class Jelly(Entity):
     def __init__(self):
         super().__init__('Jelly', 'j', Colors().blue, 1)
         self.Health = Health(3)
-        self.Attack = Attack('Splash', 5, Alignemnt.CHAOTIC)
+        self.Attack = Attack('Splash', 5, Alignment.CHAOTIC)
 
     def remove(self, entityLayer):
         '''
@@ -55,7 +55,7 @@ class Newt(Entity):
     def __init__(self):
         super().__init__('Newt', 'n', Colors().yellow, 1)
         self.Health = Health(3)
-        self.Attack = Attack('Bite', 1, Alignemnt.CHAOTIC)
+        self.Attack = Attack('Bite', 1, Alignment.CHAOTIC)
         self.Brain = Brain(5, 1)
 
     def update(self, entityLayer, playerPos):
