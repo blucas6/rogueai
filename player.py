@@ -1,4 +1,4 @@
-from entity import Entity, ONE_LAYER_CIRCLE
+from entity import Entity 
 from component import *
 from colors import Colors
 from algo import RecursiveShadow

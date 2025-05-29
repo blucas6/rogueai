@@ -1,4 +1,4 @@
-from entity import Entity, ONE_LAYER_CIRCLE 
+from entity import Entity 
 from colors import Colors
 from animation import Animator, Animation
 from component import *
@@ -58,7 +58,7 @@ class Newt(Entity):
         self.Attack = Attack('Bite', 1, Alignment.CHAOTIC)
         self.Brain = Brain(5, 1)
 
-    def update(self, entityLayer, playerPos):
+    def update(self, entityLayer, playerPos, *args):
         self.doAction(
             self.Brain.input(self.pos,playerPos, entityLayer),
             entityLayer

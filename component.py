@@ -3,6 +3,18 @@ import math
 from enum import Enum
 from algo import RecursiveShadow
 
+ONE_LAYER_CIRCLE = [(1,-1),(1,0),(1,1),(0,-1),(0,0),(0,1),(-1,-1),(-1,0),(-1,1)]
+
+class Activate:
+    '''
+    Activate component, if an entity does something upon a trigger
+    '''
+    def __init__(self, startingState):
+        self.active = startingState
+
+    def trigger(self):
+        self.active = not self.active
+
 class Brain:
     '''
     Brain component, if an entity needs to make decisions

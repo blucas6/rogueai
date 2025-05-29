@@ -2,8 +2,8 @@ from colors import Colors
 from logger import Logger
 from menu import Messager
 import itertools
+from component import *
 
-ONE_LAYER_CIRCLE = [(1,-1),(1,0),(1,1),(0,-1),(0,0),(0,1),(-1,-1),(-1,0),(-1,1)]
 
 class Entity:
     '''
@@ -56,6 +56,7 @@ class Entity:
         if self.layer > maxLayer:
             self.pos[0] = row
             self.pos[1] = col
+            self.activate(entityLayer)
 
     def validSpace(self, entityLayer, row, col):
         '''
@@ -70,9 +71,13 @@ class Entity:
         '''default update entity'''
         pass
 
-    def activate(self, *args, **kwargs):
-        '''activate an entity property'''
-        pass
+    def activate(self, entityLayer):
+        '''
+        Check for any activatable entities upon entering a square
+        '''
+        for entity in entity[self.pos[0]][self.pos[1]]:
+            if entity is not self and hasattr(entity, 'Activate'):
+                entity.Activate.trigger()
 
     def movement(self, key, entityLayer):
         '''

@@ -11,16 +11,19 @@ class Level:
     '''
     def __init__(self, height, width, z, rng):
         self.height = height
-        '''total height (rows) of the level'''
+        '''Total height (rows) of the level'''
         self.width = width
-        '''total width (cols) of the level'''
+        '''Total width (cols) of the level'''
         self.z = z
-        '''depth level'''
+        '''Depth level'''
         self.EntityLayer = [[[] for _ in range(self.width)]
                                 for _ in range(self.height)]
-        '''holds all entities on the level'''
+        '''Holds all entities on the level'''
+        self.LightLayer = [[[] for _ in range(self.width)]
+                                for _ in range(self.height)]
+        '''Tracks all lit spaces on level'''
         self.RNG = rng
-        '''random generator with optional seed'''
+        '''Random generator with optional seed'''
         self.Logger = Logger()
 
     def default(self, playerPos=[], downstairPos=[], upstair=True):
@@ -252,19 +255,25 @@ class LevelManager:
         Go through current level layer and update entities, if an entity has 
         updated its own position, move it to the right spot
         Update the player first before everything
-        Run throught entity layer again to correct any positional changes
+        Run through entity layer again to correct any positional changes
+        Clear light layer and update lighting
         '''
         level = self.Levels[self.CurrentZ]
         # update player first
         if not self.removeIfDead(self.Player, level):
             self.fixPlayerPosition(level)
+        # clear light layer
+        self.LightLayer = [[[] for _ in range(self.width)]
+                                for _ in range(self.height)]
         # get list of all entities to update
         entityUpdateList = [entity for row in level.EntityLayer 
                             for entityList in row for entity in entityList]
         for entity in entityUpdateList:
             # call entity update
             if not self.removeIfDead(entity, level):
-                entity.update(level.EntityLayer, self.Player.pos)
+                entity.update(level.EntityLayer,
+                              self.Player.pos,
+                              level.LightLayer)
                 # move entity to correct position
                 self.fixEntityPosition(entity, level)
 
