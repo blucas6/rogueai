@@ -257,7 +257,7 @@ class LevelManager:
         level = self.Levels[self.CurrentZ]
         # update player first
         if not self.removeIfDead(self.Player, level):
-            self.fixPlayerPosition(level)
+            self.fixEntityPosition(self.Player, level)
         # get list of all entities to update
         entityUpdateList = [entity for row in level.EntityLayer 
                             for entityList in row for entity in entityList]
@@ -307,20 +307,6 @@ class LevelManager:
             del level.EntityLayer[r][c][idx]
             # place entity and update r, c, idx
             self.Levels[entity.z].placeEntity(entity, entity.pos)
-    
-    def fixPlayerPosition(self, level):
-        '''
-        Finds the Player in the Entity Layer and moves it to its correct spot
-        according to its own position
-        '''
-        for r,row in enumerate(level.EntityLayer):
-            for c,entityList in enumerate(row):
-                if not entityList:
-                    continue
-                for idx,entity in enumerate(entityList):
-                    if entity.name == 'Player':
-                        self.fixEntityPosition(entity, level)
-                        return
 
     def swapLevels(self):
         '''
