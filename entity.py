@@ -10,28 +10,30 @@ class Entity:
     Base entity class for all objects
     '''
     _id_gen = itertools.count(1)
-    '''shared ID generator'''
+    '''Shared ID generator'''
     def __init__(self, name, glyph, color, layer):
         self.id = next(Entity._id_gen)
-        '''unique id'''
+        '''Unique id'''
         self.name = name
-        '''name of entity'''
+        '''Name of entity'''
         self.glyph = glyph
-        '''glyph for display'''
+        '''Glyph for display'''
         self.color = color
-        '''color for display'''
+        '''Color for display'''
         self.pos = [-1,-1]
-        '''starting position is always off map'''
+        '''Starting position is always off map'''
         self.layer = layer
-        '''layer for movement'''
+        '''Layer for movement'''
         self.z = -1
-        '''current z level'''
+        '''Current z level'''
         self.Messager = Messager()
-        '''connection to message queue'''
+        '''Connection to message queue'''
         self.isActive = True
-        '''if false, level manager will remove the entity from the game'''
+        '''If false, level manager will remove the entity from the game'''
         self.EntityLayerPos = [-1, -1, -1]
-        '''xyz coordinates in the Entity Layer, set by level manager'''
+        '''Coordinates (xyz) in the Entity Layer, set by level manager'''
+        self.turn = 0
+        '''Keeps track of game turns'''
         self.Logger = Logger()
 
     def setPosition(self, pos: list, zlevel: int, idx: int):
@@ -40,7 +42,7 @@ class Entity:
         '''
         self.pos = pos
         self.z = zlevel
-        self.EntityLayerPos = [pos[0], pos[1], -1]
+        self.EntityLayerPos = [pos[0], pos[1], idx]
     
     def remove(self, entityLayer):
         '''
@@ -65,6 +67,10 @@ class Entity:
             row >= 0 and col >= 0):
             return True
         return False
+
+    def input(self, *args, **kwargs):
+        '''default input entity'''
+        pass
 
     def update(self, *args, **kwargs):
         '''default update entity'''

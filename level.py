@@ -247,7 +247,7 @@ class LevelManager:
         else:
             self.Logger.log(f'Invalid placement of player!')
 
-    def updateCurrentLevel(self):
+    def updateCurrentLevel(self, turn, energy):
         '''
         Go through current level layer and update entities, if an entity has 
         updated its own position, move it to the right spot
@@ -255,18 +255,26 @@ class LevelManager:
         Run throught entity layer again to correct any positional changes
         '''
         level = self.Levels[self.CurrentZ]
-        # update player first
-        if not self.removeIfDead(self.Player, level):
-            self.fixEntityPosition(self.Player, level)
         # get list of all entities to update
-        entityUpdateList = [entity for row in level.EntityLayer 
+        entityStack = [entity for row in level.EntityLayer 
                             for entityList in row for entity in entityList]
-        for entity in entityUpdateList:
+        # make sure player updates first
+        entityStack.append(self.Player)
+        while entityStack:
+            entity = entityStack.pop()
             # call entity update
             if not self.removeIfDead(entity, level):
+                if entity.turn < turn:
+                    entity.turn = turn
+                    entity.input(energy, level.EntityLayer, self.Player.pos)
                 entity.update(level.EntityLayer, self.Player.pos)
                 # move entity to correct position
                 self.fixEntityPosition(entity, level)
+
+    def setupPlayerFOV(self):
+        self.Logger.log(self.CurrentZ)
+        self.Logger.log(self.getCurrentLevel())
+        self.Player.setupFOV(self.getCurrentLevel().EntityLayer)
 
     def removeIfDead(self, entity: Entity, level: Level):
         '''
@@ -280,7 +288,7 @@ class LevelManager:
             idx = entity.EntityLayerPos[2]
             try:
                 del level.EntityLayer[r][c][idx]
-                self.Logger.log(f'REMOVING: {entity.name}')
+                self.Logger.log(f'REMOVING: {entity.name} {r},{c},{idx}')
             except Exception as e:
                 self.Logger.log(f'Failed to remove {entity.name}:{r},{c},{idx}')
             return True
@@ -303,10 +311,13 @@ class LevelManager:
         # move entity to another level
         if (entity.z != self.CurrentZ and 
                     entity.z < self.TotalLevels):
-            # remove entity at old spot
-            del level.EntityLayer[r][c][idx]
-            # place entity and update r, c, idx
-            self.Levels[entity.z].placeEntity(entity, entity.pos)
+            try:
+                # remove entity at old spot
+                del level.EntityLayer[r][c][idx]
+                # place entity and update r, c, idx
+                self.Levels[entity.z].placeEntity(entity, entity.pos)
+            except:
+                self.Logger.log(f'Skipping moving {entity.name} to new level')
 
     def swapLevels(self):
         '''
