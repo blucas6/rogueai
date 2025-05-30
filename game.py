@@ -82,7 +82,11 @@ class Game:
         startPos = [1,1]
         self.LevelManager.defaultLevelSetupWalls(startPos)
         self.LevelManager.addPlayer(startPos, 0)
-        self.LevelManager.Player.update(self.LevelManager.getCurrentLevel().EntityLayer)
+        self.LevelManager.Player.update(
+            self.LevelManager.getCurrentLevel().EntityLayer
+        )
+        # update the game one time (generates FOV)
+        self.loop(energy=0)
 
     def start(self, stdscr: curses.window=None):
         '''
@@ -94,7 +98,6 @@ class Game:
         else:
             self.noDisplaySetup()
         self.gameSetup()
-        self.loop(energy=0)
         self.main()
 
     def main(self):
@@ -127,7 +130,9 @@ class Game:
             self.stateMachine('msgQEmpty')
     
     def getEvent(self):
-        # process events (continuously polling)
+        '''
+        Gets an event (continuously polling)
+        '''
         return self.processEvent(self.Engine.readInput())
 
     def loop(self, energy):

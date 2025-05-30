@@ -310,12 +310,14 @@ class LevelManager:
             level.placeEntity(entity, entity.pos)
         # move entity to another level
         if (entity.z != self.CurrentZ and 
-                    entity.z < self.TotalLevels):
+                entity.z < self.TotalLevels):
             try:
-                # remove entity at old spot
-                del level.EntityLayer[r][c][idx]
-                # place entity and update r, c, idx
-                self.Levels[entity.z].placeEntity(entity, entity.pos)
+                # make sure the entity is not already moved to a new level
+                if level.EntityLayer[r][c][idx].id == entity.id:
+                    # remove entity at old spot
+                    del level.EntityLayer[r][c][idx]
+                    # place entity and update r, c, idx
+                    self.Levels[entity.z].placeEntity(entity, entity.pos)
             except:
                 self.Logger.log(f'Skipping moving {entity.name} to new level')
 

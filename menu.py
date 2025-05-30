@@ -140,6 +140,8 @@ class HealthMenu(Menu):
         super().__init__(origin, length)
 
     def update(self, health=10, maxhealth=10):
+        if health < 0:
+            health = 0
         amount = round((self.HealthBarLength * health / maxhealth))
         self.text = '['+amount*'\u2588'+(self.HealthBarLength-amount)*' '+']'
 
