@@ -82,7 +82,11 @@ class Game:
         startPos = [1,1]
         self.LevelManager.defaultLevelSetupWalls(startPos)
         self.LevelManager.addPlayer(startPos, 0)
-        self.LevelManager.Player.update(self.LevelManager.getCurrentLevel().EntityLayer)
+        self.LevelManager.Player.update(
+            self.LevelManager.getCurrentLevel().EntityLayer
+        )
+        # update the game one time (generates FOV)
+        self.loop(energy=0)
 
     def start(self, stdscr: curses.window=None):
         '''
@@ -101,8 +105,11 @@ class Game:
         Main process
         '''
         while self.running:
+            # check for events
+            energy = self.getEvent()
             # update the game
-            self.loop(self.Engine.readInput())
+            if energy > -1:
+                self.loop(energy)
             # update and grab any messages in the queue
             self.messages()
             # rewrite all the map buffers and menu buffers to the screen
@@ -121,40 +128,44 @@ class Game:
             self.stateMachine('msgQFull')
         else:
             self.stateMachine('msgQEmpty')
+    
+    def getEvent(self):
+        '''
+        Gets an event (continuously polling)
+        '''
+        return self.processEvent(self.Engine.readInput())
 
-    def loop(self, event=None):
+    def loop(self, energy):
         '''
         Execute one loop in the game loop
         '''
-        # process events (continuously polling)
-        energy = self.processEvent(event)
-        if energy == 0:
-            self.MenuManager.MessageMenu.clear()
-        elif energy > 0:
-            self.Energy += energy
-            self.Energy -= 1
-            # clear current message
-            self.MenuManager.MessageMenu.clear()
-            # check for win condition
-            if not self.GameState == GameState.WON and self.win():
-                self.Messager.addMessage('You won!')
-                self.stateMachine('won')
-            # update all entities
-            self.LevelManager.updateCurrentLevel()
-            # player has moved to a new level
-            if self.LevelManager.swapLevels():
-                self.LevelManager.Player.clearMentalMap(
-                    self.LevelManager.getCurrentLevel().EntityLayer)
-                # update level menu on level change
-                self.MenuManager.DepthMenu.update(self.LevelManager.CurrentZ)
-            # update health menu
-            self.MenuManager.HealthMenu.update(
-                self.LevelManager.Player.Health.currentHealth,
-                self.LevelManager.Player.Health.maxHealth)
-            # check for death
-            if not self.GameState == GameState.WON and self.lose():
-                self.Messager.addMessage('You died!')
-                self.stateMachine('won')
+        # clear current message
+        self.MenuManager.MessageMenu.clear()
+        # check for win condition
+        if not self.GameState == GameState.WON and self.win():
+            self.Messager.addMessage('You won!')
+            self.stateMachine('won')
+        # update all entities
+        self.LevelManager.updateCurrentLevel(
+            self.MenuManager.TurnMenu.count,
+            energy
+        )
+        # player has moved to a new level
+        if self.LevelManager.swapLevels():
+            self.LevelManager.Player.clearMentalMap(
+                self.LevelManager.getCurrentLevel().EntityLayer)
+            # update level menu on level change
+            self.MenuManager.DepthMenu.update(self.LevelManager.CurrentZ)
+        # update player FOV
+        self.LevelManager.setupPlayerFOV()
+        # update health menu
+        self.MenuManager.HealthMenu.update(
+            self.LevelManager.Player.Health.currentHealth,
+            self.LevelManager.Player.Health.maxHealth)
+        # check for death
+        if not self.GameState == GameState.WON and self.lose():
+            self.Messager.addMessage('You died!')
+            self.stateMachine('won')
     
     def animations(self):
         '''
