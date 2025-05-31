@@ -19,7 +19,7 @@ class Level:
         self.EntityLayer = [[[] for _ in range(self.width)]
                                 for _ in range(self.height)]
         '''Holds all entities on the level'''
-        self.LightLayer = [[[] for _ in range(self.width)]
+        self.LightLayer = [[0 for _ in range(self.width)]
                                 for _ in range(self.height)]
         '''Tracks all lit spaces on level'''
         self.RNG = rng
@@ -49,7 +49,7 @@ class Level:
             for c in range(self.width):
                 maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
                 if (maxLayer == Layer.FLOOR_LAYER
-                    and self.RNG.randint(1,100) < 20):
+                    and self.RNG.randint(1,100) < 3):
                     self.placeEntity(Light(), [r,c])
 
     def wallShapeGenerator(self, playerPos=[], minWallsPlaced=10):
@@ -280,7 +280,7 @@ class LevelManager:
         level = self.Levels[self.CurrentZ]
 
         # clear light layer
-        self.LightLayer = [[[] for _ in range(self.width)]
+        level.LightLayer = [[0 for _ in range(self.width)]
                                 for _ in range(self.height)]
         # get list of all entities to update
         entityStack = [entity for row in level.EntityLayer 
@@ -311,7 +311,8 @@ class LevelManager:
                 self.fixEntityPosition(entity, level)
 
     def setupPlayerFOV(self):
-        self.Player.setupFOV(self.getCurrentLevel().EntityLayer)
+        self.Player.setupFOV(self.getCurrentLevel().EntityLayer,
+                             self.getCurrentLevel().LightLayer)
 
     def removeIfDead(self, entity: Entity, level: Level):
         '''
@@ -367,7 +368,7 @@ class LevelManager:
             return True
         return False
 
-    def getCurrentLevel(self):
+    def getCurrentLevel(self) -> Level:
         '''
         Returns the current level object
         '''

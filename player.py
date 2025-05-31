@@ -8,7 +8,7 @@ class Player(Entity):
                          glyph='@',
                          color=Colors().white,
                          layer=Layer.MONST_LAYER)
-        self.Health = Health(health=5)
+        self.Health = Health(health=6)
         '''Health component'''
         self.Attack = Attack(name='Punch',
                              damage=1,
@@ -31,7 +31,7 @@ class Player(Entity):
         self.Brain = Brain(self.sightRange, self.blockLayer)
         '''Player brain for game interactions'''
 
-    def setupFOV(self, entityLayer):
+    def setupFOV(self, entityLayer, lightLayer):
         '''Get the FOV for the player'''
         # pts = self.getSimpleFOV()
         pts = self.Brain.getFOVFromEntityLayer(entityLayer, self.pos)
@@ -40,6 +40,12 @@ class Player(Entity):
                                     for row in range(len(entityLayer))]
         for pt in pts:
             self.mentalMap[pt[0]][pt[1]] = entityLayer[pt[0]][pt[1]]
+        
+        self.Logger.log(lightLayer)
+        for r,row in enumerate(lightLayer):
+            for c,col in enumerate(row):
+                if col:
+                    self.mentalMap[r][c] = entityLayer[r][c]
 
     def clearMentalMap(self, entityLayer):
         '''Clears the mental map'''

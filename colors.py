@@ -27,7 +27,8 @@ class Colors:
                 'magenta',
                 'cyan',
                 'white',
-                'white_inv'
+                'white_inv',
+                'yellow_bg'
             ]
             if display:
                 self.cursesColors()
@@ -50,3 +51,4 @@ class Colors:
         curses.init_pair(7, curses.COLOR_CYAN, curses.COLOR_BLACK)
         curses.init_pair(8, curses.COLOR_WHITE, curses.COLOR_BLACK)
         curses.init_pair(9, curses.COLOR_BLACK, curses.COLOR_WHITE)
+        curses.init_pair(10, curses.COLOR_WHITE, curses.COLOR_YELLOW)

@@ -272,6 +272,14 @@ class Game:
                     continue
                 # add color
                 self.ColorBuffer[rw][cl] = color
+        # go through light layer
+        lightLayer = self.LevelManager.getCurrentLevel().LightLayer
+        for r,row in enumerate(lightLayer):
+            for c,col in enumerate(row):
+                rw, cl = self.mapPosToScreenPos(r,c)
+                if lightLayer[r][c]:
+                    color = Colors().yellow_bg
+                    self.ColorBuffer[rw][cl] = color
     
     def processEvent(self, event):
         '''

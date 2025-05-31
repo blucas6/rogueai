@@ -5,6 +5,9 @@ from algo import RecursiveShadow
 
 ONE_LAYER_CIRCLE = [(1,-1),(1,0),(1,1),(0,-1),(0,0),(0,1),(-1,-1),(-1,0),(-1,1)]
 
+def getOneLayerPts(myPos):
+    return [[myPos[0]+pt[0],myPos[1]+pt[1]] for pt in ONE_LAYER_CIRCLE]
+
 class Activate:
     '''
     Activate component, if an entity does something upon a trigger

@@ -40,10 +40,10 @@ class Jelly(Entity):
         animator = Animator()
         animator.queueUp(animation)
         # spread damage
-        points = ONE_LAYER_CIRCLE
+        points = getOneLayerPts(self.pos)
         for point in points:
-            row = self.pos[0] + point[0]
-            col = self.pos[1] + point[1]
+            row = point[0]
+            col = point[1]
             if (row,col) == self.pos:
                 continue
             if self.validSpace(entityLayer, row, col):
