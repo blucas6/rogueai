@@ -1,8 +1,8 @@
-from entity import Entity, Wall, Floor, StairUp, StairDown
+from entity import *
 from monster import *
+from tower import *
 from player import Player
 from logger import Logger
-import random
 from algo import dijkstra
 
 class Level:
@@ -44,13 +44,20 @@ class Level:
         return self.generateStairs(
             playerPos=playerPos, downstairPos=downstairPos, upstair=upstair)
 
+    def addLighting(self):
+        for r in range(self.height):
+            for c in range(self.width):
+                maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
+                if (maxLayer == Layer.FLOOR_LAYER
+                    and self.RNG.randint(1,100) < 20):
+                    self.placeEntity(Light(), [r,c])
+
     def wallShapeGenerator(self, playerPos=[], minWallsPlaced=10):
         '''
         Generates walls on the level using predetermined shapes
         minWallsPlaced counts how many wall spaces need to be covered in the 
         level
         '''
-        self.Logger.log(playerPos)
         wallShapes = []
         wallL = [
             ['0','',''],
@@ -77,13 +84,14 @@ class Level:
         wallShapes.append(wallLine)
         wallShapes.append(wallCorner)
         wallsPlaced = 0
-        maxIterations = 10
+        maxIterations = 100
+        # go through until minimum wall amount was reached or max tries
         while wallsPlaced < minWallsPlaced and maxIterations > 0:
             maxIterations -= 1
             for r in range(self.height):
                 for c in range(self.width): 
-                    maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
-                    if maxLayer < 1 and self.RNG.randint(1,100) < 10:
+                    if self.RNG.randint(1,100) < 10:
+                        # grab a shape and rotate it
                         shape = wallShapes[self.RNG.randint(0,len(wallShapes)-1)]
                         times = self.RNG.randint(0,3)
                         for t in range(times):
@@ -91,8 +99,10 @@ class Level:
                         for sr,srows in enumerate(shape):
                             for sc,scols in enumerate(srows):
                                 pt = [r+sr,c+sc]
+                                # not a point in the shape
                                 if not scols:
                                     continue
+                                # player is already there
                                 if playerPos and pt == playerPos:
                                     continue
                                 self.placeEntity(Wall(), pt)
@@ -107,16 +117,23 @@ class Level:
         r = pos[0]
         c = pos[1]
         if self.withinMap(pos):
-            if not overwrite and self.EntityLayer[r][c]:
+            if (not overwrite and
+                self.EntityLayer[r][c] and
+                entity.layer > Layer.FLOOR_LAYER):
+                # entities that have a large layer (greater than 1)
+                # are not able to be placed on top of another large layer
                 maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
                 if entity.layer <= maxLayer:
-                    return                 
+                    self.Logger.log(f'Layer issue with placement -> {entity.name}')
+                    return
             if overwrite:
                 self.EntityLayer[r][c] = [entity]
-                entity.setPosition(pos, self.z, 0)
+                entity.setPosition(pos=pos, zlevel=self.z, idx=0)
             else:
                 self.EntityLayer[r][c].append(entity)
-                entity.setPosition(pos, self.z, len(self.EntityLayer[r][c])-1)
+                entity.setPosition(pos=pos,
+                                   zlevel=self.z,
+                                   idx=len(self.EntityLayer[r][c])-1)
         else:
             self.Logger.log(f'Failed to place entity -> {entity.name} {pos}')
 
@@ -176,7 +193,8 @@ class Level:
         for r in range(self.height):
             for c in range(self.width):
                 maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
-                if (maxLayer == 0 and self.RNG.randint(1,100) < 3):
+                if (maxLayer == Layer.FLOOR_LAYER
+                    and self.RNG.randint(1,100) < 3):
                     if self.RNG.randint(1,2) == 1:
                         m = Jelly()
                     else:
@@ -239,6 +257,7 @@ class LevelManager:
             else:
                 downstairPos = level.defaultWalls(downstairPos=downstairPos)
             level.generateMonsters()
+            level.addLighting()
 
     def addPlayer(self, pos: list, z: int):
         '''
@@ -277,13 +296,14 @@ class LevelManager:
                     entity.turn = turn
                     entities = entity.input(energy,
                                             level.EntityLayer,
-                                            self.Player.pos
-                                            )
+                                            self.Player.pos)
                     if entities:
-                        addEntities.append(entities)
-                entities = entity.update(level.EntityLayer, self.Player.pos)
+                        addEntities.extend(entities)
+                entities = entity.update(level.EntityLayer,
+                                         self.Player.pos,
+                                         level.LightLayer)
                 if entities:
-                    addEntities.append(entities)
+                    addEntities.extend(entities)
                 if addEntities:
                     for e in addEntities:
                         entityStack.append(e)
@@ -291,8 +311,6 @@ class LevelManager:
                 self.fixEntityPosition(entity, level)
 
     def setupPlayerFOV(self):
-        self.Logger.log(self.CurrentZ)
-        self.Logger.log(self.getCurrentLevel())
         self.Player.setupFOV(self.getCurrentLevel().EntityLayer)
 
     def removeIfDead(self, entity: Entity, level: Level):

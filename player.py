@@ -1,11 +1,13 @@
-from entity import Entity 
+from entity import *
 from component import *
 from colors import Colors
-from algo import RecursiveShadow
 
 class Player(Entity):
     def __init__(self, rows, cols):
-        super().__init__('Player', '@', Colors().white, 1)
+        super().__init__(name='Player',
+                         glyph='@',
+                         color=Colors().white,
+                         layer=Layer.MONST_LAYER)
         self.Health = Health(health=5)
         '''Health component'''
         self.Attack = Attack(name='Punch',
@@ -24,7 +26,7 @@ class Player(Entity):
         '''Glyph to show unexplored territory'''
         self.unknownColor = Colors().white
         '''Color of glyph for unexplored territory'''
-        self.blockLayer = 1
+        self.blockLayer = Layer.WALL_LAYER
         '''For FOV, highest level (exclusive) to see through'''
         self.Brain = Brain(self.sightRange, self.blockLayer)
         '''Player brain for game interactions'''

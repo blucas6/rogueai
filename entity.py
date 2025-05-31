@@ -3,7 +3,13 @@ from logger import Logger
 from menu import Messager
 import itertools
 from component import *
+from enum import IntEnum
 
+class Layer(IntEnum):
+    FLOOR_LAYER = 0,
+    OBJECT_LAYER = 1,
+    MONST_LAYER = 2,
+    WALL_LAYER = 3
 
 class Entity:
     '''
@@ -23,7 +29,7 @@ class Entity:
         self.pos = [-1,-1]
         '''Starting position is always off map'''
         self.layer = layer
-        '''Layer for movement'''
+        '''Layer level at which the entity resides'''
         self.z = -1
         '''Current z level'''
         self.Messager = Messager()
@@ -147,23 +153,3 @@ class Entity:
             if not self.moveZ(event, entityLayer):
                 self.Messager.addMessage('There are no stairs here')
         return []
-
-class Wall(Entity):
-    '''Wall entity'''
-    def __init__(self):
-        super().__init__('Wall', '░', Colors().white, 2)
-
-class Floor(Entity):
-    '''Floor entity'''
-    def __init__(self):
-        super().__init__('Floor', '.', Colors().white, 0)
-
-class StairUp(Entity):
-    '''Up stair entity'''
-    def __init__(self):
-        super().__init__('Upstair', '<', Colors().white, 0)
-
-class StairDown(Entity):
-    '''Down stair entity'''
-    def __init__(self):
-        super().__init__('Downstair', '>', Colors().white, 0)
