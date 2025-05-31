@@ -269,13 +269,24 @@ class LevelManager:
         # make sure player updates first
         entityStack.append(self.Player)
         while entityStack:
+            addEntities = []
             entity = entityStack.pop()
             # call entity update
             if not self.removeIfDead(entity, level):
                 if entity.turn < turn:
                     entity.turn = turn
-                    entity.input(energy, level.EntityLayer, self.Player.pos)
-                entity.update(level.EntityLayer, self.Player.pos)
+                    entities = entity.input(energy,
+                                            level.EntityLayer,
+                                            self.Player.pos
+                                            )
+                    if entities:
+                        addEntities.append(entities)
+                entities = entity.update(level.EntityLayer, self.Player.pos)
+                if entities:
+                    addEntities.append(entities)
+                if addEntities:
+                    for e in addEntities:
+                        entityStack.append(e)
                 # move entity to correct position
                 self.fixEntityPosition(entity, level)
 

@@ -6,9 +6,11 @@ from algo import RecursiveShadow
 class Player(Entity):
     def __init__(self, rows, cols):
         super().__init__('Player', '@', Colors().white, 1)
-        self.Health = Health(5)
+        self.Health = Health(health=5)
         '''Health component'''
-        self.Attack = Attack('Punch', 1, Alignment.LAWFUL)
+        self.Attack = Attack(name='Punch',
+                             damage=1,
+                             alignment=Alignment.LAWFUL)
         '''Attack component'''
         self.mentalMap = [[[] for _ in range(cols)] for _ in range(rows)]
         '''Entity map for output to the screen'''
@@ -27,10 +29,8 @@ class Player(Entity):
         self.Brain = Brain(self.sightRange, self.blockLayer)
         '''Player brain for game interactions'''
 
-    def update(self, *args):
-        pass
-
     def setupFOV(self, entityLayer):
+        '''Get the FOV for the player'''
         # pts = self.getSimpleFOV()
         pts = self.Brain.getFOVFromEntityLayer(entityLayer, self.pos)
         if not self.fovMemory:

@@ -58,12 +58,10 @@ class Newt(Entity):
         self.Attack = Attack('Bite', 1, Alignment.CHAOTIC)
         self.Brain = Brain(5, 1)
 
-    def update(self, *args):
-        pass
-
     def input(self, energy, entityLayer, playerPos):
         if energy > 0:
-            self.doAction(
-                self.Brain.input(self.pos,playerPos, entityLayer),
-                entityLayer
-            )
+            return self.doAction(
+                    self.Brain.input(self.pos,playerPos, entityLayer),
+                    entityLayer
+                )
+        return []

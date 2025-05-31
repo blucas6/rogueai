@@ -58,7 +58,9 @@ class Entity:
         if self.layer > maxLayer:
             self.pos[0] = row
             self.pos[1] = col
-            self.activate(entityLayer)
+            entities = self.activate(entityLayer)
+            return entities
+        return []
 
     def validSpace(self, entityLayer, row, col):
         '''
@@ -71,19 +73,22 @@ class Entity:
 
     def input(self, *args, **kwargs):
         '''default input entity'''
-        pass
+        return []
 
     def update(self, *args, **kwargs):
         '''default update entity'''
-        pass
+        return []
 
     def activate(self, entityLayer):
         '''
         Check for any activatable entities upon entering a square
         '''
-        for entity in entity[self.pos[0]][self.pos[1]]:
+        entities = []
+        for entity in entityLayer[self.pos[0]][self.pos[1]]:
             if entity is not self and hasattr(entity, 'Activate'):
                 entity.Activate.trigger()
+                entities.append(entity)
+        return entities
 
     def movement(self, key, entityLayer):
         '''
@@ -94,12 +99,13 @@ class Entity:
         col = self.pos[1] + moves[key-1][1]
         self.Logger.log(f'{self.name} m:{(row,col)}')
         if not self.validSpace(entityLayer, row, col):
-            return
+            return []
         # check if movement triggers an attack
         if not self.attack(entityLayer, row, col):
             # no attack, move normally
-            self.move(row, col, entityLayer)
-    
+            return self.move(row, col, entityLayer)
+        return []
+
     def attack(self, entityLayer, row, col):
         for entity in entityLayer[row][col]:
             if (entity is not self and 
@@ -136,10 +142,11 @@ class Entity:
         Entrance for entity actions
         '''
         if event.isdigit():
-            self.movement(int(event), entityLayer)
+            return self.movement(int(event), entityLayer)
         elif event == '<' or event == '>':
             if not self.moveZ(event, entityLayer):
                 self.Messager.addMessage('There are no stairs here')
+        return []
 
 class Wall(Entity):
     '''Wall entity'''
