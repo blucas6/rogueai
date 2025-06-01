@@ -28,11 +28,13 @@ class Brain:
         self.blockingLayer = blockingLayer
         '''Highest level (exclusive) FOV will see through'''
 
-    def input(self, myPos, playerPos, entityLayer):
+    def input(self, myPos, myZ, playerPos, playerZ, entityLayer):
         '''Returns an action'''
-        pts = self.getFOVFromEntityLayer(entityLayer, myPos)
-        if tuple(playerPos) in pts:
-            return self.moveTowardsPoint(myPos, playerPos)
+        if playerZ == myZ:
+            # only follow if player is on the same level
+            pts = self.getFOVFromEntityLayer(entityLayer, myPos)
+            if tuple(playerPos) in pts:
+                return self.moveTowardsPoint(myPos, playerPos)
         return '5'
     
     def moveTowardsPoint(self, myPos, otherPos):

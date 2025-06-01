@@ -108,32 +108,55 @@ class Level:
                                 self.placeEntity(Wall(), pt)
                                 wallsPlaced += 1
 
-    def placeEntity(self, entity: Entity, pos, overwrite=False):
+    def placeEntity(self, entity: Entity, pos, overwrite=False, specific=True):
         '''
         Places an entity somewhere valid on the map
         Overwrite set to true will delete any other entities at that position
         Overwrite set to false will simply append
+        Specific is used when a spot may be filled by another entity (going to 
+        a new level by stairs), False let's placement be around the position
         '''
         r = pos[0]
         c = pos[1]
         if self.withinMap(pos):
-            if (not overwrite and
-                self.EntityLayer[r][c] and
-                entity.layer > Layer.OBJECT_LAYER):
-                # entities that have a large layer (greater than 1)
-                # are not able to be placed on top of another large layer
-                maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
-                if entity.layer <= maxLayer:
-                    self.Logger.log(f'Layer issue with placement -> {entity.name} {maxLayer} {self.EntityLayer[r][c]}')
-                    return
             if overwrite:
+                # if overwriting, specific position will always work
                 self.EntityLayer[r][c] = [entity]
                 entity.setPosition(pos=pos, zlevel=self.z, idx=0)
             else:
-                self.EntityLayer[r][c].append(entity)
-                entity.setPosition(pos=pos,
-                                   zlevel=self.z,
-                                   idx=len(self.EntityLayer[r][c])-1)
+                # if appending, position may be full
+                if entity.layer > Layer.OBJECT_LAYER:
+                    # entities that have a large layer (greater than 1)
+                    # are not able to be placed on top of another large layer
+                    if not specific:
+                        # check first point
+                        maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
+                        if entity.layer > maxLayer:
+                            self.EntityLayer[r][c].append(entity)
+                            entity.setPosition(pos=pos,
+                                            zlevel=self.z,
+                                            idx=len(self.EntityLayer[r][c])-1)
+                            return
+                        # check for surrounding points that are open
+                        points = getOneLayerPts(pos)
+                        for pt in points:
+                            maxLayer = max([x.layer for x in self.EntityLayer[pt[0]][pt[1]]])
+                            if entity.layer > maxLayer:
+                                self.EntityLayer[pt[0]][pt[1]].append(entity)
+                                entity.setPosition(pos=pt,
+                                                zlevel=self.z,
+                                                idx=len(self.EntityLayer[pt[0]][pt[1]])-1)
+                                return
+                        self.Logger.log(f'Layer issue with placement -> {entity.name} {maxLayer} {self.EntityLayer[r][c]}')
+                    else:
+                        maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
+                        if entity.layer <= maxLayer:
+                            self.Logger.log(f'Layer issue with placement -> {entity.name} {maxLayer} {self.EntityLayer[r][c]}')
+                            return
+                        self.EntityLayer[r][c].append(entity)
+                        entity.setPosition(pos=pos,
+                                        zlevel=self.z,
+                                        idx=len(self.EntityLayer[r][c])-1)
         else:
             self.Logger.log(f'Failed to place entity -> {entity.name} {pos}')
 
@@ -298,7 +321,8 @@ class LevelManager:
                     entity.turn = turn
                     entities = entity.input(energy,
                                             level.EntityLayer,
-                                            self.Player.pos)
+                                            self.Player.pos,
+                                            self.Player.z)
                     if entities:
                         addEntities.extend(entities)
                 entities = entity.update(level.EntityLayer,
@@ -358,7 +382,9 @@ class LevelManager:
                     # remove entity at old spot
                     del level.EntityLayer[r][c][idx]
                     # place entity and update r, c, idx
-                    self.Levels[entity.z].placeEntity(entity, entity.pos)
+                    self.Levels[entity.z].placeEntity(entity,
+                                                      entity.pos,
+                                                      specific=False)
             except:
                 self.Logger.log(f'Skipping moving {entity.name} to new level')
 

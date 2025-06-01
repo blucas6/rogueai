@@ -136,12 +136,15 @@ class Entity:
             if entity.name == 'Upstair' and event == '<':
                 self.Messager.addMessage('You walk up the stairs')
                 self.z += 1
-                return True
+                return
             elif entity.name == 'Downstair' and event == '>':
                 self.Messager.addMessage('You walk down the stairs')
                 self.z -= 1
-                return True
-        return False
+                return
+        if event == '<':
+            self.Messager.addMessage("Can't go up here")
+        elif event == '>':
+            self.Messager.addMessage("Can't go down here")
 
     def doAction(self, event, entityLayer):
         '''
@@ -150,6 +153,5 @@ class Entity:
         if event.isdigit():
             return self.movement(int(event), entityLayer)
         elif event == '<' or event == '>':
-            if not self.moveZ(event, entityLayer):
-                self.Messager.addMessage('There are no stairs here')
+            self.moveZ(event, entityLayer)
         return []
