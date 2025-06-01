@@ -40,7 +40,7 @@ class Light(Entity):
                          glyph='+',
                          color=Colors().yellow,
                          layer=Layer.OBJECT_LAYER)
-        self.Activate = Activate(False)
+        self.Activate = Activate(True)
         '''Controls whether the light is on'''
 
     def update(self, entityLayer, playerPos, lightLayer, *args):

@@ -164,6 +164,12 @@ class Game:
         )
         # player has moved to a new level
         if self.LevelManager.swapLevels():
+            # update all entities again
+            self.LevelManager.updateCurrentLevel(
+                event,
+                self.MenuManager.TurnMenu.count,
+                energy
+            )
             self.LevelManager.Player.clearMentalMap(
                 self.LevelManager.getCurrentLevel().EntityLayer)
             # update level menu on level change
