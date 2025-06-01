@@ -68,7 +68,7 @@ class Newt(Entity):
                              alignment=Alignment.CHAOTIC)
         self.Brain = Brain(sightRange=5, blockingLayer=Layer.WALL_LAYER)
 
-    def input(self, energy, entityLayer, playerPos, playerZ):
+    def input(self, energy, entityLayer, playerPos, playerZ, *args):
         if energy > 0:
             return self.doAction(
                     self.Brain.input(self.pos,

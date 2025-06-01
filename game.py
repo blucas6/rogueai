@@ -93,7 +93,7 @@ class Game:
             self.LevelManager.getCurrentLevel().EntityLayer
         )
         # update the game one time (generates FOV)
-        self.loop(energy=0)
+        self.loop(event='', energy=0)
 
     def start(self, stdscr: curses.window=None):
         '''
@@ -113,10 +113,10 @@ class Game:
         '''
         while self.running:
             # check for events
-            energy = self.getEvent()
+            event,energy = self.processEvents()
             # update the game
             if energy > -1:
-                self.loop(energy)
+                self.loop(event, energy)
             # update and grab any messages in the queue
             self.messages()
             # rewrite all the map buffers and menu buffers to the screen
@@ -136,13 +136,15 @@ class Game:
         else:
             self.stateMachine('msgQEmpty')
     
-    def getEvent(self):
+    def processEvents(self):
         '''
         Gets an event (continuously polling)
         '''
-        return self.processEvent(self.Engine.readInput())
+        event = self.Engine.readInput()
+        energy = self.getEnergy(event)
+        return event, energy
 
-    def loop(self, energy):
+    def loop(self, event, energy):
         '''
         Execute one loop in the game loop
         '''
@@ -154,6 +156,7 @@ class Game:
             self.stateMachine('won')
         # update all entities
         self.LevelManager.updateCurrentLevel(
+            event,
             self.MenuManager.TurnMenu.count,
             energy
         )
@@ -288,7 +291,7 @@ class Game:
                     color = Colors().yellow_bg
                     self.ColorBuffer[rw][cl] = color
     
-    def processEvent(self, event):
+    def getEnergy(self, event):
         '''
         Process key press event from engine
         -1 does not count as an action
@@ -315,8 +318,6 @@ class Game:
             # PLAYER ACTION
             # update turn counter
             self.MenuManager.TurnMenu.update()
-            self.LevelManager.Player.doAction(event,
-                self.LevelManager.getCurrentLevel().EntityLayer)
             return 1
         # Defaults to returning -1 for no action
         return -1

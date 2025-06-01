@@ -31,6 +31,9 @@ class Player(Entity):
         self.Brain = Brain(self.sightRange, self.blockLayer)
         '''Player brain for game interactions'''
 
+    def input(self, energy, entityLayer, playerPos, playerZ, event):
+        return self.doAction(event, entityLayer)
+
     def setupFOV(self, entityLayer, lightLayer):
         '''Get the FOV for the player'''
         # pts = self.getSimpleFOV()
@@ -41,7 +44,6 @@ class Player(Entity):
         for pt in pts:
             self.mentalMap[pt[0]][pt[1]] = entityLayer[pt[0]][pt[1]]
         
-        self.Logger.log(lightLayer)
         for r,row in enumerate(lightLayer):
             for c,col in enumerate(row):
                 if col:

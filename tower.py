@@ -44,7 +44,6 @@ class Light(Entity):
         '''Controls whether the light is on'''
 
     def update(self, entityLayer, playerPos, lightLayer, *args):
-        self.Logger.log(f'Light updating {self.id} {self.pos} {self.Activate.active}')
         if self.Activate.active:
             points = getOneLayerPts(self.pos)
             for pt in points:

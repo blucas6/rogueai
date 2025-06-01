@@ -157,6 +157,13 @@ class Level:
                         entity.setPosition(pos=pos,
                                         zlevel=self.z,
                                         idx=len(self.EntityLayer[r][c])-1)
+                else:
+                    # entity can always be placed on top of anything
+                    # layer is less than 1
+                    self.EntityLayer[r][c].append(entity)
+                    entity.setPosition(pos=pos,
+                                    zlevel=self.z,
+                                    idx=len(self.EntityLayer[r][c])-1)
         else:
             self.Logger.log(f'Failed to place entity -> {entity.name} {pos}')
 
@@ -294,7 +301,7 @@ class LevelManager:
         else:
             self.Logger.log(f'Invalid placement of player!')
 
-    def updateCurrentLevel(self, turn, energy):
+    def updateCurrentLevel(self, playerEvent, turn, energy):
         '''
         Go through current level layer and update entities, if an entity has 
         updated its own position, move it to the right spot
@@ -315,16 +322,19 @@ class LevelManager:
         while entityStack:
             addEntities = []
             entity = entityStack.pop()
-            # call entity update
             if not self.removeIfDead(entity, level):
+                # entity is alive
                 if entity.turn < turn:
+                    # entity has not yet taken a turn
                     entity.turn = turn
                     entities = entity.input(energy,
                                             level.EntityLayer,
                                             self.Player.pos,
-                                            self.Player.z)
+                                            self.Player.z,
+                                            playerEvent)
                     if entities:
                         addEntities.extend(entities)
+                # always call entity update
                 entities = entity.update(level.EntityLayer,
                                          self.Player.pos,
                                          level.LightLayer)
@@ -332,7 +342,6 @@ class LevelManager:
                     addEntities.extend(entities)
                 if addEntities:
                     for e in addEntities:
-                        self.Logger.log(f'Adding {e.name}')
                         entityStack.append(e)
                 # move entity to correct position
                 self.fixEntityPosition(entity, level)
