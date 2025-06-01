@@ -26,9 +26,9 @@ class Player(Entity):
         '''Glyph to show unexplored territory'''
         self.unknownColor = Colors().white
         '''Color of glyph for unexplored territory'''
-        self.blockLayer = Layer.WALL_LAYER
+        self.blockingLayer = Layer.MONST_LAYER
         '''For FOV, highest level (exclusive) to see through'''
-        self.Brain = Brain(self.sightRange, self.blockLayer)
+        self.Brain = Brain(self.sightRange, self.blockingLayer)
         '''Player brain for game interactions'''
 
     def input(self, energy, entityLayer, playerPos, playerZ, event):

@@ -66,7 +66,7 @@ class Newt(Entity):
         self.Attack = Attack(name='Bite',
                              damage=1,
                              alignment=Alignment.CHAOTIC)
-        self.Brain = Brain(sightRange=5, blockingLayer=Layer.WALL_LAYER)
+        self.Brain = Brain(sightRange=5, blockingLayer=Layer.MONST_LAYER)
 
     def input(self, energy, entityLayer, playerPos, playerZ, *args):
         if energy > 0:

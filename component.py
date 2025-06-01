@@ -62,13 +62,13 @@ class Brain:
     
     def getFOVFromEntityLayer(self, entityLayer, currPos):
         '''Use FOV algorithm to get which points are visible'''
-        grid = [[max([x.layer for x in entityLayer[r][c]])
+        grid = [[max([int(x.layer) for x in entityLayer[r][c]])
                  for c in range(len(entityLayer[r]))]
                     for r in range(len(entityLayer))]
         return RecursiveShadow(grid,
                                currPos,
                                self.sightRange,
-                               self.blockingLayer)
+                               int(self.blockingLayer))
 
 class Health:
     '''
