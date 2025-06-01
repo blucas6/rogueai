@@ -108,6 +108,21 @@ class Level:
                                 self.placeEntity(Wall(), pt)
                                 wallsPlaced += 1
 
+    def findFreeSpace(self, entity: Entity, pos: list):
+        # check first point
+        r,c = pos[0], pos[1]
+        maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
+        if entity.layer > maxLayer:
+            return [r,c]
+        # check for surrounding points that are open
+        points = getOneLayerPts(pos)
+        for pt in points:
+            r,c = pt[0], pt[1]
+            maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
+            if entity.layer > maxLayer:
+                return [r,c]
+        return [-1,-1]
+
     def placeEntity(self, entity: Entity, pos, overwrite=False, specific=True):
         '''
         Places an entity somewhere valid on the map
@@ -129,43 +144,17 @@ class Level:
                     # entities that have a large layer (greater than 1)
                     # are not able to be placed on top of another large layer
                     if not specific:
-                        # check first point
-                        maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
-                        if entity.layer > maxLayer:
-                            self.EntityLayer[r][c].append(entity)
-                            entity.setPosition(pos=pos,
-                                            zlevel=self.z,
-                                            idx=len(self.EntityLayer[r][c])-1)
-                            return
-                        # check for surrounding points that are open
-                        points = getOneLayerPts(pos)
-                        for pt in points:
-                            maxLayer = max([x.layer for x in self.EntityLayer[pt[0]][pt[1]]])
-                            if entity.layer > maxLayer:
-                                self.EntityLayer[pt[0]][pt[1]].append(entity)
-                                entity.setPosition(pos=pt,
-                                                zlevel=self.z,
-                                                idx=len(self.EntityLayer[pt[0]][pt[1]])-1)
-                                return
+                        r,c = self.findFreeSpace(entity, pos)
+                    maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
+                    if entity.layer <= maxLayer:
                         self.Logger.log(f'Layer issue with placement -> {entity.name} {maxLayer} {self.EntityLayer[r][c]}')
-                    else:
-                        maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
-                        if entity.layer <= maxLayer:
-                            self.Logger.log(f'Layer issue with placement -> {entity.name} {maxLayer} {self.EntityLayer[r][c]}')
-                            return
-                        self.EntityLayer[r][c].append(entity)
-                        entity.setPosition(pos=pos,
-                                        zlevel=self.z,
-                                        idx=len(self.EntityLayer[r][c])-1)
-                else:
-                    # entity can always be placed on top of anything
-                    # layer is less than 1
-                    self.EntityLayer[r][c].append(entity)
-                    entity.setPosition(pos=pos,
-                                    zlevel=self.z,
-                                    idx=len(self.EntityLayer[r][c])-1)
+                        return
+                self.EntityLayer[r][c].append(entity)
+                entity.setPosition(pos=pos,
+                                zlevel=self.z,
+                                idx=len(self.EntityLayer[r][c])-1)
         else:
-            self.Logger.log(f'Failed to place entity -> {entity.name} {pos}')
+            self.Logger.log(f'Entity outside of map -> {entity.name} {pos}')
 
     def generateStairs(self, playerPos=[], downstairPos=[], upstair=True):
         '''
