@@ -7,17 +7,17 @@ from colors import Colors
 from logger import Logger
 from menu import MenuManager, GameState, Messager
 from animation import Animator
-import time
+import secrets
 
 class Game:
     '''
     Game class controls the entire game execution from start to finish
     '''
-    def __init__(self, seed=None, msgBlocking=True, display=True):
+    def __init__(self, specificSeed=None, msgBlocking=True, display=True):
         self.Engine = Engine(debug=False)
-        '''connection to engine for displaying and events'''
+        '''Connection to engine for displaying and events'''
         self.running = False
-        '''if the game is running'''
+        '''If the game is running'''
         self.LevelManager = None
         '''Controls objects in each level'''
         self.ScreenBuffer = None
@@ -27,21 +27,23 @@ class Game:
         self.CreatureLayer = None
         '''2D buffer the size of the map, holds all moving entities'''
         self.MenuManager = None
-        '''holds all information for displaying menus'''
+        '''Holds all information for displaying menus'''
         self.Messager = None
-        '''connection to the message queue instance'''
+        '''Connection to the message queue instance'''
         self.Energy = 0
-        '''keeps track of how much energy to dispense to objects'''
-        self.seed = seed
-        '''random seed for random calls'''
+        '''Keeps track of how much energy to dispense to objects'''
+        self.seed = None
+        '''Random seed for random calls'''
         self.MessageBlocking = msgBlocking
-        '''set to true to pause on multiple messages being displayed'''
+        '''Set to true to pause on multiple messages being displayed'''
         self.Display = display
-        '''decides if to set up the game for displaying'''
+        '''Decides if to set up the game for displaying'''
         self.GameState = GameState.PLAYING
-        '''controls the state of the game'''
+        '''Controls the state of the game'''
         self.playerFOV = True
-        '''use player FOV to generate map'''
+        '''Use player FOV to generate map'''
+        self.specificSeed = specificSeed
+        '''Set when recreating a seed'''
         self.Logger = Logger()
     
     def displaySetup(self, stdscr: curses.window, timeDelay: int=None):
@@ -70,7 +72,12 @@ class Game:
         # start running
         self.running = True
         # set up objects
-        self.RNG = random.Random(self.seed) if self.seed is not None else random
+        if self.specificSeed is None:
+            self.seed = secrets.randbits(64)
+        else:
+            self.seed = self.specificSeed
+        self.RNG = random.Random(self.seed)
+        self.Logger.log(f'SEED: {self.seed}')
         self.LevelManager = LevelManager(
                                 self.RNG,
                                 height=10,

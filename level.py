@@ -119,12 +119,12 @@ class Level:
         if self.withinMap(pos):
             if (not overwrite and
                 self.EntityLayer[r][c] and
-                entity.layer > Layer.FLOOR_LAYER):
+                entity.layer > Layer.OBJECT_LAYER):
                 # entities that have a large layer (greater than 1)
                 # are not able to be placed on top of another large layer
                 maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
                 if entity.layer <= maxLayer:
-                    self.Logger.log(f'Layer issue with placement -> {entity.name}')
+                    self.Logger.log(f'Layer issue with placement -> {entity.name} {maxLayer} {self.EntityLayer[r][c]}')
                     return
             if overwrite:
                 self.EntityLayer[r][c] = [entity]
@@ -189,9 +189,11 @@ class Level:
             return True
         return False
 
-    def generateMonsters(self):
+    def generateMonsters(self, playerPos):
         for r in range(self.height):
             for c in range(self.width):
+                if [r,c] == playerPos:
+                    continue
                 maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
                 if (maxLayer == Layer.FLOOR_LAYER
                     and self.RNG.randint(1,100) < 3):
@@ -240,7 +242,7 @@ class LevelManager:
                     playerPos=playerPos, downstairPos=downstairPos)
             else:
                 downstairPos = level.default(downstairPos=downstairPos)
-            level.generateMonsters()
+            level.generateMonsters(playerPos)
 
     def defaultLevelSetupWalls(self, playerPos):
         '''
@@ -256,7 +258,7 @@ class LevelManager:
                     playerPos=playerPos, downstairPos=downstairPos)
             else:
                 downstairPos = level.defaultWalls(downstairPos=downstairPos)
-            level.generateMonsters()
+            level.generateMonsters(playerPos)
             level.addLighting()
 
     def addPlayer(self, pos: list, z: int):
@@ -306,6 +308,7 @@ class LevelManager:
                     addEntities.extend(entities)
                 if addEntities:
                     for e in addEntities:
+                        self.Logger.log(f'Adding {e.name}')
                         entityStack.append(e)
                 # move entity to correct position
                 self.fixEntityPosition(entity, level)
