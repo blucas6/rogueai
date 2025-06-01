@@ -127,7 +127,9 @@ class Game:
             self.animations()
 
     def messages(self):
-        # deal with messages
+        '''
+        Deal with messages in the queue
+        '''
         self.MenuManager.MessageMenu.update(blocking=self.MessageBlocking)
         if self.Messager.MsgQueue:
             # still more messages to process, msg queue should never be full if
@@ -138,7 +140,7 @@ class Game:
     
     def processEvents(self):
         '''
-        Gets an event (continuously polling)
+        Gets an event and it's respective energy (continuously polling)
         '''
         event = self.Engine.readInput()
         energy = self.getEnergy(event)

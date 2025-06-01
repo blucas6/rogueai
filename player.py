@@ -32,6 +32,9 @@ class Player(Entity):
         '''Player brain for game interactions'''
 
     def input(self, energy, entityLayer, playerPos, playerZ, event):
+        '''
+        Receives the player event and uses it
+        '''
         return self.doAction(event, entityLayer)
 
     def setupFOV(self, entityLayer, lightLayer):

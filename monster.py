@@ -69,6 +69,9 @@ class Newt(Entity):
         self.Brain = Brain(sightRange=5, blockingLayer=Layer.MONST_LAYER)
 
     def input(self, energy, entityLayer, playerPos, playerZ, *args):
+        '''
+        Uses brain to select an action
+        '''
         if energy > 0:
             return self.doAction(
                     self.Brain.input(self.pos,

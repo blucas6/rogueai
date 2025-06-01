@@ -109,6 +109,10 @@ class Level:
                                 wallsPlaced += 1
 
     def findFreeSpace(self, entity: Entity, pos: list):
+        '''
+        If an entity can't be placed on the spot it was specified for,
+        find other available points around
+        '''
         # check first point
         r,c = pos[0], pos[1]
         maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
@@ -295,6 +299,7 @@ class LevelManager:
         Go through current level layer and update entities, if an entity has 
         updated its own position, move it to the right spot
         Update the player first before everything
+        Pass the player's action to the player entity
         Run through entity layer again to correct any positional changes
         Clear light layer and update lighting
         '''
@@ -336,6 +341,9 @@ class LevelManager:
                 self.fixEntityPosition(entity, level)
 
     def setupPlayerFOV(self):
+        '''
+        Get the FOV from the player object
+        '''
         self.Player.setupFOV(self.getCurrentLevel().EntityLayer,
                              self.getCurrentLevel().LightLayer)
 
