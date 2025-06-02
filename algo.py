@@ -1,4 +1,5 @@
 import heapq
+from logger import Logger
 
 def dijkstra(grid, start, end):
     rows, cols = len(grid), len(grid[0])
@@ -33,6 +34,23 @@ def dijkstra(grid, start, end):
 
     return None
 
+def debugGrid(grid, pts):
+    for row in grid:
+        Logger().log(row)
+    Logger().log('-------------------')
+    for r,row in enumerate(grid):
+        line = '['
+        for c,col in enumerate(row):
+            if (r,c) in pts:
+                line += 'X'
+            else:
+                line += str(col)
+            if not c == len(row)-1:
+                line += ', '
+        line += ']'
+        Logger().log(line)
+    Logger().log('==========')
+
 MULT = [
             [1,  0,  0, -1, -1,  0,  0,  1],
             [0,  1, -1,  0,  0, -1,  1,  0],
@@ -40,10 +58,11 @@ MULT = [
             [1,  0,  0,  1, -1,  0,  0, -1]
         ]
 
-def RecursiveShadow(grid, pos, radius, blockingLayer=1):
+def RecursiveShadow(grid: list, pos: list, radius: int, blockingLayer: int=1,
+                    debug=False):
     '''
     Returns a list of points that are viewable from the current position
-    All points are viewable up to the blocking layer value
+    All points are viewable, including the blockingLayer value
     '''
     pts = set()
     pts.add((pos[0],pos[1]))
@@ -51,6 +70,8 @@ def RecursiveShadow(grid, pos, radius, blockingLayer=1):
         castLight(grid, pos[1], pos[0], 1, 1.0, 0.0, radius,
                   MULT[0][oct], MULT[1][oct], MULT[2][oct], MULT[3][oct], pts,
                   blockingLayer)
+    if debug:
+        debugGrid(grid, pts)
     return pts
 
 def castLight(grid, cx, cy, row, start, end, radius, xx, xy, yx, yy, pts,

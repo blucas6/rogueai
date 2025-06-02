@@ -3,6 +3,27 @@ import math
 from enum import Enum
 from algo import RecursiveShadow
 
+ONE_LAYER_CIRCLE = [(1,-1),(1,0),(1,1),(0,-1),(0,0),(0,1),(-1,-1),(-1,0),(-1,1)]
+
+def getOneLayerPts(myPos):
+    '''
+    Utility function
+    Pass in a position to return all points around that position
+    '''
+    return [[myPos[0]+pt[0],myPos[1]+pt[1]] for pt in ONE_LAYER_CIRCLE]
+
+class Activate:
+    '''
+    Activate component, if an entity does something upon a trigger
+    '''
+    def __init__(self, startingState):
+        self.active = startingState
+        '''State of the entity'''
+
+    def trigger(self):
+        '''Flip the state'''
+        self.active = not self.active
+
 class Brain:
     '''
     Brain component, if an entity needs to make decisions
@@ -13,11 +34,13 @@ class Brain:
         self.blockingLayer = blockingLayer
         '''Highest level (exclusive) FOV will see through'''
 
-    def input(self, myPos, playerPos, entityLayer):
+    def input(self, myPos, myZ, playerPos, playerZ, entityLayer):
         '''Returns an action'''
-        pts = self.getFOVFromEntityLayer(entityLayer, myPos)
-        if tuple(playerPos) in pts:
-            return self.moveTowardsPoint(myPos, playerPos)
+        if playerZ == myZ:
+            # only follow if player is on the same level
+            pts = self.getFOVFromEntityLayer(entityLayer, myPos)
+            if tuple(playerPos) in pts:
+                return self.moveTowardsPoint(myPos, playerPos)
         return '5'
     
     def moveTowardsPoint(self, myPos, otherPos):
@@ -45,13 +68,13 @@ class Brain:
     
     def getFOVFromEntityLayer(self, entityLayer, currPos):
         '''Use FOV algorithm to get which points are visible'''
-        grid = [[max([x.layer for x in entityLayer[r][c]])
+        grid = [[max([int(x.layer) for x in entityLayer[r][c]])
                  for c in range(len(entityLayer[r]))]
                     for r in range(len(entityLayer))]
         return RecursiveShadow(grid,
                                currPos,
                                self.sightRange,
-                               self.blockingLayer)
+                               int(self.blockingLayer))
 
 class Health:
     '''
@@ -78,6 +101,10 @@ class Health:
         return False
     
 class Alignment(Enum):
+    '''
+    Attack components have an alignment, so that creatures of the same
+    alignment cannot damage each other
+    '''
     LAWFUL = 0,
     CHAOTIC = 1
 

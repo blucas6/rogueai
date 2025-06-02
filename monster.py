@@ -1,4 +1,4 @@
-from entity import Entity, ONE_LAYER_CIRCLE 
+from entity import *
 from colors import Colors
 from animation import Animator, Animation
 from component import *
@@ -8,9 +8,14 @@ class Jelly(Entity):
     Jelly entity
     '''
     def __init__(self):
-        super().__init__('Jelly', 'j', Colors().blue, 1)
-        self.Health = Health(3)
-        self.Attack = Attack('Splash', 5, Alignment.CHAOTIC)
+        super().__init__(name='Jelly',
+                         glyph='j',
+                         color=Colors().blue,
+                         layer=Layer.MONST_LAYER)
+        self.Health = Health(health=3)
+        self.Attack = Attack(name='Splash',
+                             damage=5,
+                             alignment=Alignment.CHAOTIC)
 
     def remove(self, entityLayer):
         '''
@@ -35,10 +40,10 @@ class Jelly(Entity):
         animator = Animator()
         animator.queueUp(animation)
         # spread damage
-        points = ONE_LAYER_CIRCLE
+        points = getOneLayerPts(self.pos)
         for point in points:
-            row = self.pos[0] + point[0]
-            col = self.pos[1] + point[1]
+            row = point[0]
+            col = point[1]
             if (row,col) == self.pos:
                 continue
             if self.validSpace(entityLayer, row, col):
@@ -53,13 +58,27 @@ class Newt(Entity):
     Newt Entity
     '''
     def __init__(self):
-        super().__init__('Newt', 'n', Colors().yellow, 1)
-        self.Health = Health(3)
-        self.Attack = Attack('Bite', 1, Alignment.CHAOTIC)
-        self.Brain = Brain(5, 1)
+        super().__init__(name='Newt',
+                         glyph='n',
+                         color=Colors().yellow,
+                         layer=Layer.MONST_LAYER)
+        self.Health = Health(health=3)
+        self.Attack = Attack(name='Bite',
+                             damage=1,
+                             alignment=Alignment.CHAOTIC)
+        self.Brain = Brain(sightRange=5, blockingLayer=Layer.MONST_LAYER)
 
-    def update(self, entityLayer, playerPos):
-        self.doAction(
-            self.Brain.input(self.pos,playerPos, entityLayer),
-            entityLayer
-        )
+    def input(self, energy, entityLayer, playerPos, playerZ, *args):
+        '''
+        Uses brain to select an action
+        '''
+        if energy > 0:
+            return self.doAction(
+                    self.Brain.input(self.pos,
+                                     self.z,
+                                     playerPos,
+                                     playerZ,
+                                     entityLayer),
+                    entityLayer
+                )
+        return []

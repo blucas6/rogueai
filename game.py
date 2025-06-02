@@ -7,17 +7,17 @@ from colors import Colors
 from logger import Logger
 from menu import MenuManager, GameState, Messager
 from animation import Animator
-import time
+import secrets
 
 class Game:
     '''
     Game class controls the entire game execution from start to finish
     '''
-    def __init__(self, seed=None, msgBlocking=True, display=True):
+    def __init__(self, specificSeed=None, msgBlocking=True, display=True):
         self.Engine = Engine(debug=False)
-        '''connection to engine for displaying and events'''
+        '''Connection to engine for displaying and events'''
         self.running = False
-        '''if the game is running'''
+        '''If the game is running'''
         self.LevelManager = None
         '''Controls objects in each level'''
         self.ScreenBuffer = None
@@ -27,21 +27,23 @@ class Game:
         self.CreatureLayer = None
         '''2D buffer the size of the map, holds all moving entities'''
         self.MenuManager = None
-        '''holds all information for displaying menus'''
+        '''Holds all information for displaying menus'''
         self.Messager = None
-        '''connection to the message queue instance'''
+        '''Connection to the message queue instance'''
         self.Energy = 0
-        '''keeps track of how much energy to dispense to objects'''
-        self.seed = seed
-        '''random seed for random calls'''
+        '''Keeps track of how much energy to dispense to objects'''
+        self.seed = None
+        '''Random seed for random calls'''
         self.MessageBlocking = msgBlocking
-        '''set to true to pause on multiple messages being displayed'''
+        '''Set to true to pause on multiple messages being displayed'''
         self.Display = display
-        '''decides if to set up the game for displaying'''
+        '''Decides if to set up the game for displaying'''
         self.GameState = GameState.PLAYING
-        '''controls the state of the game'''
+        '''Controls the state of the game'''
         self.playerFOV = True
-        '''use player FOV to generate map'''
+        '''Use player FOV to generate map'''
+        self.specificSeed = specificSeed
+        '''Set when recreating a seed'''
         self.Logger = Logger()
     
     def displaySetup(self, stdscr: curses.window, timeDelay: int=None):
@@ -70,7 +72,12 @@ class Game:
         # start running
         self.running = True
         # set up objects
-        self.RNG = random.Random(self.seed) if self.seed is not None else random
+        if self.specificSeed is None:
+            self.seed = secrets.randbits(64)
+        else:
+            self.seed = self.specificSeed
+        self.RNG = random.Random(self.seed)
+        self.Logger.log(f'SEED: {self.seed}')
         self.LevelManager = LevelManager(
                                 self.RNG,
                                 height=10,
@@ -81,8 +88,12 @@ class Game:
         self.Messager = Messager()
         startPos = [1,1]
         self.LevelManager.defaultLevelSetupWalls(startPos)
-        self.LevelManager.addPlayer(startPos, 0)
-        self.LevelManager.Player.update(self.LevelManager.getCurrentLevel().EntityLayer)
+        self.LevelManager.addPlayer(pos=startPos, z=0)
+        self.LevelManager.Player.update(
+            self.LevelManager.getCurrentLevel().EntityLayer
+        )
+        # update the game one time (generates FOV)
+        self.loop(event='', energy=0)
 
     def start(self, stdscr: curses.window=None):
         '''
@@ -101,8 +112,11 @@ class Game:
         Main process
         '''
         while self.running:
+            # check for events
+            event,energy = self.processEvents()
             # update the game
-            self.loop(self.Engine.readInput())
+            if energy > -1:
+                self.loop(event, energy)
             # update and grab any messages in the queue
             self.messages()
             # rewrite all the map buffers and menu buffers to the screen
@@ -113,7 +127,9 @@ class Game:
             self.animations()
 
     def messages(self):
-        # deal with messages
+        '''
+        Deal with messages in the queue
+        '''
         self.MenuManager.MessageMenu.update(blocking=self.MessageBlocking)
         if self.Messager.MsgQueue:
             # still more messages to process, msg queue should never be full if
@@ -121,40 +137,53 @@ class Game:
             self.stateMachine('msgQFull')
         else:
             self.stateMachine('msgQEmpty')
+    
+    def processEvents(self):
+        '''
+        Gets an event and it's respective energy (continuously polling)
+        '''
+        event = self.Engine.readInput()
+        energy = self.getEnergy(event)
+        return event, energy
 
-    def loop(self, event=None):
+    def loop(self, event, energy):
         '''
         Execute one loop in the game loop
         '''
-        # process events (continuously polling)
-        energy = self.processEvent(event)
-        if energy == 0:
-            self.MenuManager.MessageMenu.clear()
-        elif energy > 0:
-            self.Energy += energy
-            self.Energy -= 1
-            # clear current message
-            self.MenuManager.MessageMenu.clear()
-            # check for win condition
-            if not self.GameState == GameState.WON and self.win():
-                self.Messager.addMessage('You won!')
-                self.stateMachine('won')
-            # update all entities
-            self.LevelManager.updateCurrentLevel()
-            # player has moved to a new level
-            if self.LevelManager.swapLevels():
-                self.LevelManager.Player.clearMentalMap(
-                    self.LevelManager.getCurrentLevel().EntityLayer)
-                # update level menu on level change
-                self.MenuManager.DepthMenu.update(self.LevelManager.CurrentZ)
-            # update health menu
-            self.MenuManager.HealthMenu.update(
-                self.LevelManager.Player.Health.currentHealth,
-                self.LevelManager.Player.Health.maxHealth)
-            # check for death
-            if not self.GameState == GameState.WON and self.lose():
-                self.Messager.addMessage('You died!')
-                self.stateMachine('won')
+        # clear current message
+        self.MenuManager.MessageMenu.clear()
+        # check for win condition
+        if not self.GameState == GameState.WON and self.win():
+            self.Messager.addMessage('You won!')
+            self.stateMachine('won')
+        # update all entities
+        self.LevelManager.updateCurrentLevel(
+            event,
+            self.MenuManager.TurnMenu.count,
+            energy
+        )
+        # player has moved to a new level
+        if self.LevelManager.swapLevels():
+            # update all entities again
+            self.LevelManager.updateCurrentLevel(
+                event,
+                self.MenuManager.TurnMenu.count,
+                energy
+            )
+            self.LevelManager.Player.clearMentalMap(
+                self.LevelManager.getCurrentLevel().EntityLayer)
+            # update level menu on level change
+            self.MenuManager.DepthMenu.update(self.LevelManager.CurrentZ)
+        # update player FOV
+        self.LevelManager.setupPlayerFOV()
+        # update health menu
+        self.MenuManager.HealthMenu.update(
+            self.LevelManager.Player.Health.currentHealth,
+            self.LevelManager.Player.Health.maxHealth)
+        # check for death
+        if not self.GameState == GameState.WON and self.lose():
+            self.Messager.addMessage('You died!')
+            self.stateMachine('won')
     
     def animations(self):
         '''
@@ -261,8 +290,16 @@ class Game:
                     continue
                 # add color
                 self.ColorBuffer[rw][cl] = color
+        # go through light layer
+        lightLayer = self.LevelManager.getCurrentLevel().LightLayer
+        for r,row in enumerate(lightLayer):
+            for c,col in enumerate(row):
+                rw, cl = self.mapPosToScreenPos(r,c)
+                if lightLayer[r][c]:
+                    color = Colors().yellow_bg
+                    self.ColorBuffer[rw][cl] = color
     
-    def processEvent(self, event):
+    def getEnergy(self, event):
         '''
         Process key press event from engine
         -1 does not count as an action
@@ -289,8 +326,6 @@ class Game:
             # PLAYER ACTION
             # update turn counter
             self.MenuManager.TurnMenu.update()
-            self.LevelManager.Player.doAction(event,
-                self.LevelManager.getCurrentLevel().EntityLayer)
             return 1
         # Defaults to returning -1 for no action
         return -1

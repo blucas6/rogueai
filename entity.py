@@ -2,36 +2,51 @@ from colors import Colors
 from logger import Logger
 from menu import Messager
 import itertools
+from component import *
+from enum import IntEnum
 
-ONE_LAYER_CIRCLE = [(1,-1),(1,0),(1,1),(0,-1),(0,0),(0,1),(-1,-1),(-1,0),(-1,1)]
+class Layer(IntEnum):
+    '''
+    Layer Types:
+        0-1: stackable, anything with these layers will be placed on top of
+            each other
+        2: not stackable, entities that move around, FOV can see through them
+        3: not stackable, FOV cannot see through them
+    '''
+    FLOOR_LAYER = 0,
+    OBJECT_LAYER = 1,
+    MONST_LAYER = 2,
+    WALL_LAYER = 3
 
 class Entity:
     '''
     Base entity class for all objects
     '''
     _id_gen = itertools.count(1)
-    '''shared ID generator'''
+    '''Shared ID generator'''
     def __init__(self, name, glyph, color, layer):
         self.id = next(Entity._id_gen)
-        '''unique id'''
+        '''Unique id'''
         self.name = name
-        '''name of entity'''
+        '''Name of entity'''
         self.glyph = glyph
-        '''glyph for display'''
+        '''Glyph for display'''
         self.color = color
-        '''color for display'''
+        '''Color for display'''
         self.pos = [-1,-1]
-        '''starting position is always off map'''
+        '''Starting position is always off map'''
         self.layer = layer
-        '''layer for movement'''
+        '''Layer level at which the entity resides'''
         self.z = -1
-        '''current z level'''
+        '''Current z level'''
         self.Messager = Messager()
-        '''connection to message queue'''
+        '''Connection to message queue'''
         self.isActive = True
-        '''if false, level manager will remove the entity from the game'''
+        '''If false, level manager will remove the entity from the game'''
         self.EntityLayerPos = [-1, -1, -1]
-        '''xyz coordinates in the Entity Layer, set by level manager'''
+        '''Coordinates (xyz) in the Entity Layer, set by level manager'''
+        self.turn = 0
+        '''Keeps track of game turns'''
         self.Logger = Logger()
 
     def setPosition(self, pos: list, zlevel: int, idx: int):
@@ -40,9 +55,9 @@ class Entity:
         '''
         self.pos = pos
         self.z = zlevel
-        self.EntityLayerPos = [pos[0], pos[1], -1]
+        self.EntityLayerPos = [pos[0], pos[1], idx]
     
-    def remove(self, entityLayer):
+    def remove(self, *args):
         '''
         Triggers the removal of this entity from the entity layer
         '''
@@ -56,6 +71,10 @@ class Entity:
         if self.layer > maxLayer:
             self.pos[0] = row
             self.pos[1] = col
+            # entities that are activated are added to the entity stack
+            entities = self.activate(entityLayer)
+            return entities
+        return []
 
     def validSpace(self, entityLayer, row, col):
         '''
@@ -66,13 +85,24 @@ class Entity:
             return True
         return False
 
+    def input(self, *args, **kwargs):
+        '''default input entity'''
+        return []
+
     def update(self, *args, **kwargs):
         '''default update entity'''
-        pass
+        return []
 
-    def activate(self, *args, **kwargs):
-        '''activate an entity property'''
-        pass
+    def activate(self, entityLayer):
+        '''
+        Check for any activatable entities upon entering a square
+        '''
+        entities = []
+        for entity in entityLayer[self.pos[0]][self.pos[1]]:
+            if entity is not self and hasattr(entity, 'Activate'):
+                entity.Activate.trigger()
+                entities.append(entity)
+        return entities
 
     def movement(self, key, entityLayer):
         '''
@@ -83,13 +113,18 @@ class Entity:
         col = self.pos[1] + moves[key-1][1]
         self.Logger.log(f'{self.name} m:{(row,col)}')
         if not self.validSpace(entityLayer, row, col):
-            return
+            return []
         # check if movement triggers an attack
         if not self.attack(entityLayer, row, col):
             # no attack, move normally
-            self.move(row, col, entityLayer)
-    
+            return self.move(row, col, entityLayer)
+        return []
+
     def attack(self, entityLayer, row, col):
+        '''
+        Check a square and attack it
+        Opposing entity must have a Health and it's own Attack
+        '''
         for entity in entityLayer[row][col]:
             if (entity is not self and 
                 hasattr(entity, 'Health') and
@@ -101,7 +136,7 @@ class Entity:
                     entity.remove(entityLayer)
                 else:
                     self.Messager.addDamageMessage(self.name, entity.name)
-                # only exit if an attack was triggered
+                # exit if an attack was triggered
                 return True
         return False
     
@@ -113,39 +148,22 @@ class Entity:
             if entity.name == 'Upstair' and event == '<':
                 self.Messager.addMessage('You walk up the stairs')
                 self.z += 1
-                return True
+                return
             elif entity.name == 'Downstair' and event == '>':
                 self.Messager.addMessage('You walk down the stairs')
                 self.z -= 1
-                return True
-        return False
+                return
+        if event == '<':
+            self.Messager.addMessage("Can't go up here")
+        elif event == '>':
+            self.Messager.addMessage("Can't go down here")
 
     def doAction(self, event, entityLayer):
         '''
         Entrance for entity actions
         '''
         if event.isdigit():
-            self.movement(int(event), entityLayer)
+            return self.movement(int(event), entityLayer)
         elif event == '<' or event == '>':
-            if not self.moveZ(event, entityLayer):
-                self.Messager.addMessage('There are no stairs here')
-
-class Wall(Entity):
-    '''Wall entity'''
-    def __init__(self):
-        super().__init__('Wall', '░', Colors().white, 2)
-
-class Floor(Entity):
-    '''Floor entity'''
-    def __init__(self):
-        super().__init__('Floor', '.', Colors().white, 0)
-
-class StairUp(Entity):
-    '''Up stair entity'''
-    def __init__(self):
-        super().__init__('Upstair', '<', Colors().white, 0)
-
-class StairDown(Entity):
-    '''Down stair entity'''
-    def __init__(self):
-        super().__init__('Downstair', '>', Colors().white, 0)
+            self.moveZ(event, entityLayer)
+        return []

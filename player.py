@@ -1,14 +1,18 @@
-from entity import Entity, ONE_LAYER_CIRCLE
+from entity import *
 from component import *
 from colors import Colors
-from algo import RecursiveShadow
 
 class Player(Entity):
     def __init__(self, rows, cols):
-        super().__init__('Player', '@', Colors().white, 1)
-        self.Health = Health(20)
+        super().__init__(name='Player',
+                         glyph='@',
+                         color=Colors().white,
+                         layer=Layer.MONST_LAYER)
+        self.Health = Health(health=6)
         '''Health component'''
-        self.Attack = Attack('Punch', 1, Alignment.LAWFUL)
+        self.Attack = Attack(name='Punch',
+                             damage=1,
+                             alignment=Alignment.LAWFUL)
         '''Attack component'''
         self.mentalMap = [[[] for _ in range(cols)] for _ in range(rows)]
         '''Entity map for output to the screen'''
@@ -22,12 +26,19 @@ class Player(Entity):
         '''Glyph to show unexplored territory'''
         self.unknownColor = Colors().white
         '''Color of glyph for unexplored territory'''
-        self.blockLayer = 1
+        self.blockingLayer = Layer.MONST_LAYER
         '''For FOV, highest level (exclusive) to see through'''
-        self.Brain = Brain(self.sightRange, self.blockLayer)
+        self.Brain = Brain(self.sightRange, self.blockingLayer)
         '''Player brain for game interactions'''
 
-    def update(self, entityLayer, *args):
+    def input(self, energy, entityLayer, playerPos, playerZ, event):
+        '''
+        Receives the player event and uses it
+        '''
+        return self.doAction(event, entityLayer)
+
+    def setupFOV(self, entityLayer, lightLayer):
+        '''Get the FOV for the player'''
         # pts = self.getSimpleFOV()
         pts = self.Brain.getFOVFromEntityLayer(entityLayer, self.pos)
         if not self.fovMemory:
@@ -35,6 +46,11 @@ class Player(Entity):
                                     for row in range(len(entityLayer))]
         for pt in pts:
             self.mentalMap[pt[0]][pt[1]] = entityLayer[pt[0]][pt[1]]
+        
+        for r,row in enumerate(lightLayer):
+            for c,col in enumerate(row):
+                if col:
+                    self.mentalMap[r][c] = entityLayer[r][c]
 
     def clearMentalMap(self, entityLayer):
         '''Clears the mental map'''
