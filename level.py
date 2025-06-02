@@ -27,7 +27,7 @@ class Level:
         self.Logger = Logger()
 
     def default(self, playerPos=[], downstairPos=[], upstair=True):
-        '''loads a default map'''
+        '''Loads a default map'''
         # generate walls and floor
         self.generateSurroundingWallsFloor()
         # add stairs
@@ -35,7 +35,7 @@ class Level:
             playerPos=playerPos, downstairPos=downstairPos, upstair=upstair)
     
     def defaultWalls(self, playerPos=[], downstairPos=[], upstair=True):
-        '''loads a map with some walls'''
+        '''Loads a map with some walls'''
         # generate walls and floor
         self.generateSurroundingWallsFloor()
         # add wall shapes
@@ -45,6 +45,9 @@ class Level:
             playerPos=playerPos, downstairPos=downstairPos, upstair=upstair)
 
     def addLighting(self):
+        '''
+        Adds lights to the level
+        '''
         for r in range(self.height):
             for c in range(self.width):
                 maxLayer = max([x.layer for x in self.EntityLayer[r][c]])

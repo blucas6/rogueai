@@ -6,6 +6,10 @@ from algo import RecursiveShadow
 ONE_LAYER_CIRCLE = [(1,-1),(1,0),(1,1),(0,-1),(0,0),(0,1),(-1,-1),(-1,0),(-1,1)]
 
 def getOneLayerPts(myPos):
+    '''
+    Utility function
+    Pass in a position to return all points around that position
+    '''
     return [[myPos[0]+pt[0],myPos[1]+pt[1]] for pt in ONE_LAYER_CIRCLE]
 
 class Activate:
@@ -14,8 +18,10 @@ class Activate:
     '''
     def __init__(self, startingState):
         self.active = startingState
+        '''State of the entity'''
 
     def trigger(self):
+        '''Flip the state'''
         self.active = not self.active
 
 class Brain:
@@ -95,6 +101,10 @@ class Health:
         return False
     
 class Alignment(Enum):
+    '''
+    Attack components have an alignment, so that creatures of the same
+    alignment cannot damage each other
+    '''
     LAWFUL = 0,
     CHAOTIC = 1
 

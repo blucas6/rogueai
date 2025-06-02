@@ -6,6 +6,13 @@ from component import *
 from enum import IntEnum
 
 class Layer(IntEnum):
+    '''
+    Layer Types:
+        0-1: stackable, anything with these layers will be placed on top of
+            each other
+        2: not stackable, entities that move around, FOV can see through them
+        3: not stackable, FOV cannot see through them
+    '''
     FLOOR_LAYER = 0,
     OBJECT_LAYER = 1,
     MONST_LAYER = 2,
@@ -50,7 +57,7 @@ class Entity:
         self.z = zlevel
         self.EntityLayerPos = [pos[0], pos[1], idx]
     
-    def remove(self, entityLayer):
+    def remove(self, *args):
         '''
         Triggers the removal of this entity from the entity layer
         '''
@@ -64,6 +71,7 @@ class Entity:
         if self.layer > maxLayer:
             self.pos[0] = row
             self.pos[1] = col
+            # entities that are activated are added to the entity stack
             entities = self.activate(entityLayer)
             return entities
         return []
@@ -113,6 +121,10 @@ class Entity:
         return []
 
     def attack(self, entityLayer, row, col):
+        '''
+        Check a square and attack it
+        Opposing entity must have a Health and it's own Attack
+        '''
         for entity in entityLayer[row][col]:
             if (entity is not self and 
                 hasattr(entity, 'Health') and
@@ -124,7 +136,7 @@ class Entity:
                     entity.remove(entityLayer)
                 else:
                     self.Messager.addDamageMessage(self.name, entity.name)
-                # only exit if an attack was triggered
+                # exit if an attack was triggered
                 return True
         return False
     

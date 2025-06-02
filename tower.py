@@ -35,6 +35,7 @@ class StairDown(Entity):
                          layer=Layer.FLOOR_LAYER)
 
 class Light(Entity):
+    '''Light entity'''
     def __init__(self):
         super().__init__(name='Light',
                          glyph='+',
