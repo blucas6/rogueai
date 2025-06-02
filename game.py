@@ -4,7 +4,7 @@ from curses import ascii
 from engine import Engine
 from level import LevelManager
 from colors import Colors
-from logger import Logger
+from logger import Logger, Timing
 from menu import MenuManager, GameState, Messager
 from animation import Animator
 import secrets
@@ -13,7 +13,8 @@ class Game:
     '''
     Game class controls the entire game execution from start to finish
     '''
-    def __init__(self, specificSeed=None, msgBlocking=True, display=True):
+    def __init__(self, specificSeed=None, msgBlocking=True, display=True,
+                 timing=False):
         self.Engine = Engine(debug=False)
         '''Connection to engine for displaying and events'''
         self.running = False
@@ -44,7 +45,13 @@ class Game:
         '''Use player FOV to generate map'''
         self.specificSeed = specificSeed
         '''Set when recreating a seed'''
+        self.allowTiming = timing
+        '''Timing turns off logging and takes timing measurements'''
+        self.Timing = Timing()
+        '''Timing object to hold all measurements'''
         self.Logger = Logger()
+        # turn off logging for timing measurements
+        self.Logger.debugOn = not timing
     
     def displaySetup(self, stdscr: curses.window, timeDelay: int=None):
         '''
@@ -69,6 +76,8 @@ class Game:
         '''
         Sets up the game from a fresh start
         '''
+        if self.allowTiming:
+            self.Timing.start('Game Setup')
         # start running
         self.running = True
         # set up objects
@@ -92,6 +101,8 @@ class Game:
         self.LevelManager.Player.update(
             self.LevelManager.getCurrentLevel().EntityLayer
         )
+        if self.allowTiming:
+            self.Timing.end()
         # update the game one time (generates FOV)
         self.loop(event='', energy=0)
 
@@ -106,6 +117,10 @@ class Game:
             self.noDisplaySetup()
         self.gameSetup()
         self.main()
+    
+    def end(self):
+        if self.allowTiming:
+            self.Timing.show()
 
     def main(self):
         '''
@@ -125,6 +140,7 @@ class Game:
             self.render()
             # display any queued animations all at once
             self.animations()
+        self.end()
 
     def messages(self):
         '''
@@ -150,6 +166,8 @@ class Game:
         '''
         Execute one loop in the game loop
         '''
+        if self.allowTiming:
+            self.Timing.start('Game Loop')
         # clear current message
         self.MenuManager.MessageMenu.clear()
         # check for win condition
@@ -184,6 +202,8 @@ class Game:
         if not self.GameState == GameState.WON and self.lose():
             self.Messager.addMessage('You died!')
             self.stateMachine('won')
+        if self.allowTiming:
+            self.Timing.end()
     
     def animations(self):
         '''
