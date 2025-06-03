@@ -1,7 +1,7 @@
 import heapq
 from logger import Logger
 
-def dijkstra(grid, start, end):
+def dijkstra(grid: list, start: tuple, end: tuple):
     rows, cols = len(grid), len(grid[0])
     heap = []
 

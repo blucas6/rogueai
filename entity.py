@@ -4,6 +4,8 @@ from menu import Messager
 import itertools
 from component import *
 from enum import IntEnum
+from algo import *
+from animation import *
 
 class Layer(IntEnum):
     '''
@@ -175,6 +177,18 @@ class Entity:
             entity.setPosition(pos=target, zlevel=self.z, idx=-1)
         else:
             return
+        grid = [[max([int(x.layer) for x in entityLayer[r][c]])
+                 for c in range(len(entityLayer[r]))]
+                    for r in range(len(entityLayer))]
+        pts = dijkstra(grid, tuple(self.pos), tuple(entity.pos))
+        frames = {}
+        frames['0'] = [['' for col in row] for row in grid]
+        for pt in pts:
+            frames['0'][pt[0]][pt[1]] = '*'
+        apos = [0,0]
+        animation = Animation(apos, frames, Colors().red)
+        animator = Animator()
+        animator.queueUp(animation)
         return [entity]
 
     def fire(self):

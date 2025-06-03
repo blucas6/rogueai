@@ -36,7 +36,7 @@ class Jelly(Entity):
         apos = [0,0]
         apos[0] = self.pos[0]-1
         apos[1] = self.pos[1]-1
-        animation = Animation(apos, frames, Colors().white)
+        animation = Animation(apos, frames, Colors().blue)
         animator = Animator()
         animator.queueUp(animation)
         # spread damage

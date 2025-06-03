@@ -208,6 +208,7 @@ class Game:
                                 continue
                             rw, cl = self.mapPosToScreenPos(apos[0]+r,apos[1]+c)
                             self.ScreenBuffer[rw][cl] = col
+                            self.ColorBuffer[rw][cl] = animation.color
                 # output to terminal
                 self.render()
                 self.Engine.pause(delay)
