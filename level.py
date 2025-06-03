@@ -160,6 +160,7 @@ class Level:
                 entity.setPosition(pos=pos,
                                 zlevel=self.z,
                                 idx=len(self.EntityLayer[r][c])-1)
+                # self.Logger.log(f'Placing entity -> {entity.name} {pos}')
         else:
             self.Logger.log(f'Entity outside of map -> {entity.name} {pos}')
 
@@ -339,6 +340,7 @@ class LevelManager:
                     addEntities.extend(entities)
                 if addEntities:
                     for e in addEntities:
+                        self.Logger.log(f'Adding -> {e.name} {e.pos}')
                         entityStack.append(e)
                 # move entity to correct position
                 self.fixEntityPosition(entity, level)
@@ -373,29 +375,35 @@ class LevelManager:
         Moves an entity to the correct spot in the Entity Layer according
         to its own position, fixes the entity's entityLayerPos coords
         '''
-        # move entity around current level
-        r = entity.EntityLayerPos[0]
-        c = entity.EntityLayerPos[1]
-        idx = entity.EntityLayerPos[2]
-        if (entity.pos[0] != r or entity.pos[1] != c):
-            # remove entity at old spot
-            del level.EntityLayer[r][c][idx]
-            # place new entity and update r, c, idx
+        # check if entity has been placed on the level
+        if entity.EntityLayerPos[2] == -1:
+            # entity has just been created, not on level yet
             level.placeEntity(entity, entity.pos)
-        # move entity to another level
-        if (entity.z != self.CurrentZ and 
-                entity.z < self.TotalLevels):
-            try:
-                # make sure the entity is not already moved to a new level
-                if level.EntityLayer[r][c][idx].id == entity.id:
-                    # remove entity at old spot
-                    del level.EntityLayer[r][c][idx]
-                    # place entity and update r, c, idx
-                    self.Levels[entity.z].placeEntity(entity,
-                                                      entity.pos,
-                                                      specific=False)
-            except:
-                self.Logger.log(f'Skipping moving {entity.name} to new level')
+        else:
+            # move entity around current level
+            r = entity.EntityLayerPos[0]
+            c = entity.EntityLayerPos[1]
+            idx = entity.EntityLayerPos[2]
+            if (entity.pos[0] != r or entity.pos[1] != c):
+                # remove entity at old spot
+                # self.Logger.log(f'Trying to remove -> {entity.name} {entity.isActive} {entity.EntityLayerPos} {entity.pos}')
+                del level.EntityLayer[r][c][idx]
+                # place new entity and update r, c, idx
+                level.placeEntity(entity, entity.pos)
+            # move entity to another level
+            if (entity.z != self.CurrentZ and 
+                    entity.z < self.TotalLevels):
+                try:
+                    # make sure the entity is not already moved to a new level
+                    if level.EntityLayer[r][c][idx].id == entity.id:
+                        # remove entity at old spot
+                        del level.EntityLayer[r][c][idx]
+                        # place entity and update r, c, idx
+                        self.Levels[entity.z].placeEntity(entity,
+                                                        entity.pos,
+                                                        specific=False)
+                except:
+                    self.Logger.log(f'Skipping moving {entity.name} to new level')
 
     def swapLevels(self):
         '''

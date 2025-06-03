@@ -1,6 +1,7 @@
 from entity import *
 from component import *
 from colors import Colors
+from tower import *
 
 class Player(Entity):
     def __init__(self, rows, cols):
@@ -66,3 +67,19 @@ class Player(Entity):
             col = pt[1]+self.pos[1]
             pts.append((row,col))
         return pts
+    
+    def fire(self, entityLayer):
+        pts = self.Brain.getFOVFromEntityLayer(entityLayer, self.pos)
+        targetPos = []
+        for pt in pts:
+            for entity in entityLayer[pt[0]][pt[1]]:
+                if (self.attackable(entity) and 
+                    (not targetPos or
+                     math.dist(self.pos,entity.pos) <
+                     math.dist(self.pos,targetPos))
+                    ):
+                    targetPos = list(entity.pos)
+        if targetPos:
+            return self.throw(Dart(), entityLayer, target=targetPos)
+        else:
+            Messager().addMessage('No targets!')

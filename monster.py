@@ -46,7 +46,7 @@ class Jelly(Entity):
             col = point[1]
             if (row,col) == self.pos:
                 continue
-            if self.validSpace(entityLayer, row, col):
+            if self.validBounds(entityLayer, row, col):
                 for entity in entityLayer[row][col]:
                     if hasattr(entity, 'Health'):
                         if entity.Health.changeHealth(-1*self.Attack.damage):
@@ -81,4 +81,3 @@ class Newt(Entity):
                                      entityLayer),
                     entityLayer
                 )
-        return []

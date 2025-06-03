@@ -74,11 +74,10 @@ class Entity:
             # entities that are activated are added to the entity stack
             entities = self.activate(entityLayer)
             return entities
-        return []
 
-    def validSpace(self, entityLayer, row, col):
+    def validBounds(self, entityLayer, row, col):
         '''
-        Utility for checking in the entity layer
+        Utility for checking the bounds in the entity layer
         '''
         if (row < len(entityLayer) and col < len(entityLayer[row]) and
             row >= 0 and col >= 0):
@@ -87,11 +86,11 @@ class Entity:
 
     def input(self, *args, **kwargs):
         '''default input entity'''
-        return []
+        pass
 
     def update(self, *args, **kwargs):
         '''default update entity'''
-        return []
+        pass
 
     def activate(self, entityLayer):
         '''
@@ -112,13 +111,12 @@ class Entity:
         row = self.pos[0] + moves[key-1][0]
         col = self.pos[1] + moves[key-1][1]
         self.Logger.log(f'{self.name} m:{(row,col)}')
-        if not self.validSpace(entityLayer, row, col):
-            return []
+        if not self.validBounds(entityLayer, row, col):
+            return
         # check if movement triggers an attack
         if not self.attack(entityLayer, row, col):
             # no attack, move normally
             return self.move(row, col, entityLayer)
-        return []
 
     def attack(self, entityLayer, row, col):
         '''
@@ -126,11 +124,7 @@ class Entity:
         Opposing entity must have a Health and it's own Attack
         '''
         for entity in entityLayer[row][col]:
-            if (entity is not self and 
-                hasattr(entity, 'Health') and
-                hasattr(self, 'Attack') and 
-                hasattr(entity, 'Attack') and
-                entity.Attack.alignment != self.Attack.alignment):
+            if self.attackable(entity):
                 if entity.Health.changeHealth(-1*self.Attack.damage):
                     self.Messager.addKillMessage(self.name, entity.name)
                     entity.remove(entityLayer)
@@ -138,6 +132,16 @@ class Entity:
                     self.Messager.addDamageMessage(self.name, entity.name)
                 # exit if an attack was triggered
                 return True
+        return False
+    
+    def attackable(self, entity):
+        '''Checks if an entity can be attacked'''
+        if (entity is not self and 
+            hasattr(entity, 'Health') and
+            hasattr(self, 'Attack') and 
+            hasattr(entity, 'Attack') and
+            entity.Attack.alignment != self.Attack.alignment):
+            return True
         return False
     
     def moveZ(self, event, entityLayer):
@@ -158,6 +162,25 @@ class Entity:
         elif event == '>':
             self.Messager.addMessage("Can't go down here")
 
+    def throw(self, entity, entityLayer, direction=[], target=[]):
+        if direction:
+            while True:
+                r,c = entity.pos[0] + direction[0], entity.pos[1] + direction[1]
+                maxLayer = max([x.layer for x in entityLayer[r][c]])
+                if maxLayer > Layer.OBJECT_LAYER:
+                    break
+                else:
+                    entity.setPosition(pos=[r,c], zlevel=self.z, idx=-1)
+        elif target:
+            entity.setPosition(pos=target, zlevel=self.z, idx=-1)
+        else:
+            return
+        return [entity]
+
+    def fire(self):
+        '''Define an entity to throw in the child class'''
+        pass
+
     def doAction(self, event, entityLayer):
         '''
         Entrance for entity actions
@@ -166,4 +189,5 @@ class Entity:
             return self.movement(int(event), entityLayer)
         elif event == '<' or event == '>':
             self.moveZ(event, entityLayer)
-        return []
+        elif event == 't':
+            return self.fire(entityLayer)

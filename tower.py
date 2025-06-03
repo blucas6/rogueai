@@ -52,4 +52,13 @@ class Light(Entity):
             points = getOneLayerPts(self.pos)
             for pt in points:
                 lightLayer[pt[0]][pt[1]] = 1
-        return []
+    
+class Dart(Entity):
+
+    def __init__(self):
+        super().__init__(name='Dart',
+                         glyph=')',
+                         color=Colors().red,
+                         layer=Layer.OBJECT_LAYER)
+        self.range = 1
+        self.melee = 1

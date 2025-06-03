@@ -284,7 +284,7 @@ class Game:
                     color = entityLayer[r][c][idx].color
                 if not self.boundsCheck(self.ScreenBuffer, rw, cl):
                     continue
-                # add character
+                # add glyph
                 self.ScreenBuffer[rw][cl] = glyph
                 if not self.boundsCheck(self.ColorBuffer, rw, cl):
                     continue
