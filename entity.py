@@ -177,10 +177,16 @@ class Entity:
             entity.setPosition(pos=target, zlevel=self.z, idx=-1)
         else:
             return
-        grid = [[max([int(x.layer) for x in entityLayer[r][c]])
-                 for c in range(len(entityLayer[r]))]
-                    for r in range(len(entityLayer))]
-        pts = dijkstra(grid, tuple(self.pos), tuple(entity.pos))
+        grid = [[1 if max([int(x.layer) for x in elist])
+                 > Layer.MONST_LAYER else 0
+                 for elist in row]
+                 for row in entityLayer]
+        for row in grid:
+            self.Logger.log(row)
+        code, pts = astar(grid, tuple(self.pos), tuple(entity.pos), debug=True)
+        if code != 1:
+            self.Logger.log(f'Failed to throw -> {code}')
+            return
         frames = {}
         frames['0'] = [['' for col in row] for row in grid]
         for pt in pts:

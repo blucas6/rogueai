@@ -188,7 +188,7 @@ class Level:
         end = upstairPos
         grid = [[max([e.layer for e in el]) for el in row]
                     for row in self.EntityLayer]
-        pts = dijkstra(grid, tuple(start), tuple(end))
+        pts = dijkstra(grid, tuple(start), tuple(end), diagonals=False)
         for pt in pts:
             if pt == pts[0] or pt == pts[-1]:
                 continue
