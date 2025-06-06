@@ -183,7 +183,7 @@ class Entity:
                  for row in entityLayer]
         for row in grid:
             self.Logger.log(row)
-        code, pts = astar(grid, tuple(self.pos), tuple(entity.pos), debug=True)
+        code, pts = astar(grid, tuple(self.pos), tuple(entity.pos))
         if code != 1:
             self.Logger.log(f'Failed to throw -> {code}')
             return
