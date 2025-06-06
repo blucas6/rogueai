@@ -20,13 +20,33 @@ class Layer(IntEnum):
     MONST_LAYER = 2,
     WALL_LAYER = 3
 
+class Size(IntEnum):
+    '''
+    Size Types:
+        1: very small, like darts
+        2: small, like insects
+        3: medium, hobbits or kobolds
+        4: large, people
+        5: very large, orcs or trolls
+        6: giant, yep giants
+        7: humongous, titans
+    '''
+    VERY_SMALL = 1,
+    SMALL = 2,
+    MEDIUM = 3,
+    LARGE = 4,
+    VERY_LARGE = 5,
+    GIANT = 6,
+    HUMONGOUS = 7
+
 class Entity:
     '''
     Base entity class for all objects
     '''
     _id_gen = itertools.count(1)
     '''Shared ID generator'''
-    def __init__(self, name, glyph, color, layer):
+    def __init__(self, name: str, glyph: str, color: Colors, layer: Layer,
+                 size: Size):
         self.id = next(Entity._id_gen)
         '''Unique id'''
         self.name = name
@@ -49,6 +69,8 @@ class Entity:
         '''Coordinates (xyz) in the Entity Layer, set by level manager'''
         self.turn = 0
         '''Keeps track of game turns'''
+        self.size = size
+        '''Size enum for the entity'''
         self.Logger = Logger()
 
     def setPosition(self, pos: list, zlevel: int, idx: int):
@@ -87,11 +109,11 @@ class Entity:
         return False
 
     def input(self, *args, **kwargs):
-        '''default input entity'''
+        '''Default input entity'''
         pass
 
     def update(self, *args, **kwargs):
-        '''default update entity'''
+        '''Default update entity'''
         pass
 
     def activate(self, entityLayer):
@@ -123,18 +145,28 @@ class Entity:
     def attack(self, entityLayer, row, col):
         '''
         Check a square and attack it
+
         Opposing entity must have a Health and it's own Attack
         '''
         for entity in entityLayer[row][col]:
             if self.attackable(entity):
-                if entity.Health.changeHealth(-1*self.Attack.damage):
-                    self.Messager.addKillMessage(self.name, entity.name)
-                    entity.remove(entityLayer)
-                else:
-                    self.Messager.addDamageMessage(self.name, entity.name)
+                self.dealDamage(entityLayer, entity, self.Attack.damage)
                 # exit if an attack was triggered
                 return True
         return False
+
+    def dealDamage(self, entityLayer, entity, damage):
+        '''
+        Deal damage to another entity and possibly kill it
+
+        Damage will be inversed
+        '''
+        damage = damage * -1
+        if entity.Health.changeHealth(damage):
+            self.Messager.addKillMessage(self.name, entity.name)
+            entity.remove(entityLayer)
+        else:
+            self.Messager.addDamageMessage(self.name, entity.name)
     
     def attackable(self, entity):
         '''Checks if an entity can be attacked'''
@@ -165,7 +197,20 @@ class Entity:
             self.Messager.addMessage("Can't go down here")
 
     def throw(self, entity, entityLayer, direction=[], target=[]):
+        '''
+        Base throw method
+
+        Child classes should implement a method that uses the base method and
+        passes an entity to be thrown
+
+        If direction is included, the entity will be thrown in that direction
+        until it hits a wall layer
+
+        If target is included, the entity will be sent directly to that target's
+        position
+        '''
         if direction:
+            # find the final position for the thrown object
             while True:
                 r,c = entity.pos[0] + direction[0], entity.pos[1] + direction[1]
                 maxLayer = max([x.layer for x in entityLayer[r][c]])
@@ -174,21 +219,30 @@ class Entity:
                 else:
                     entity.setPosition(pos=[r,c], zlevel=self.z, idx=-1)
         elif target:
+            # set the known position
             entity.setPosition(pos=target, zlevel=self.z, idx=-1)
         else:
             return
+        
+        # construct a grid of 1,0 (makes sure path to end point is valid)
         grid = [[1 if max([int(x.layer) for x in elist])
                  > Layer.MONST_LAYER else 0
                  for elist in row]
                  for row in entityLayer]
-        for row in grid:
-            self.Logger.log(row)
         code, pts = astar(grid, tuple(self.pos), tuple(entity.pos))
         if code != 1:
-            self.Logger.log(f'Failed to throw -> {code}')
+            self.Logger.log(f'Error: failed to throw -> {code}')
             return
+
+        # deal damage
+        dmg = entity.size * 2
+        r,c = entity.pos[0], entity.pos[1]
+        for e in entityLayer[r][c]:
+            if hasattr(e, 'Health'):
+                self.dealDamage(entityLayer, e, dmg)
+
+        # create the animation
         frames = {}
-        frames['0'] = [['' for col in row] for row in grid]
         for idx,pt in enumerate(pts):
             frames[str(idx)] = [['' for col in row] for row in grid]
             frames[str(idx)][pt[0]][pt[1]] = entity.glyph
@@ -196,11 +250,8 @@ class Entity:
         animation = Animation(apos, frames, entity.color)
         animator = Animator()
         animator.queueUp(animation)
+        # return the thrown entity
         return [entity]
-
-    def fire(self):
-        '''Define an entity to throw in the child class'''
-        pass
 
     def doAction(self, event, entityLayer):
         '''

@@ -11,7 +11,8 @@ class Jelly(Entity):
         super().__init__(name='Jelly',
                          glyph='j',
                          color=Colors().blue,
-                         layer=Layer.MONST_LAYER)
+                         layer=Layer.MONST_LAYER,
+                         size=Size.MEDIUM)
         self.Health = Health(health=3)
         self.Attack = Attack(name='Splash',
                              damage=5,
@@ -22,6 +23,7 @@ class Jelly(Entity):
         Generate the explosion on death
         '''
         self.Messager.addMessage('It explodes!')
+        # queue animation
         frames = {}
         frames['0'] = [
             ['','' ,''],
@@ -61,7 +63,8 @@ class Newt(Entity):
         super().__init__(name='Newt',
                          glyph='n',
                          color=Colors().yellow,
-                         layer=Layer.MONST_LAYER)
+                         layer=Layer.MONST_LAYER,
+                         size=Size.MEDIUM)
         self.Health = Health(health=3)
         self.Attack = Attack(name='Bite',
                              damage=1,

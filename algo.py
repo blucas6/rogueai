@@ -80,9 +80,15 @@ def trace_path(cell_details, dest):
 def astar(grid, src, dest, debug=False):
     '''
     A* search algorithm
+
     return [ success_code, [list of points]]
-    success codes: 1=success, -1=failure, 2=invalid source/dest,
-    3=blocked source/dest, 4=already at destination
+
+    success codes:
+        1 = success
+        -1 = failure
+        2 = invalid source/dest
+        3 = blocked source/dest
+        4 = already at destination
     '''
 
     # Check if the source and destination are valid

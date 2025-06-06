@@ -8,7 +8,8 @@ class Player(Entity):
         super().__init__(name='Player',
                          glyph='@',
                          color=Colors().white,
-                         layer=Layer.MONST_LAYER)
+                         layer=Layer.MONST_LAYER,
+                         size=Size.LARGE)
         self.Health = Health(health=6)
         '''Health component'''
         self.Attack = Attack(name='Punch',
@@ -69,6 +70,9 @@ class Player(Entity):
         return pts
     
     def fire(self, entityLayer):
+        '''
+        Throw an object
+        '''
         pts = self.Brain.getFOVFromEntityLayer(entityLayer, self.pos)
         targetPos = []
         for pt in pts:

@@ -8,7 +8,8 @@ class Wall(Entity):
         super().__init__(name='Wall',
                          glyph='░',
                          color=Colors().white,
-                         layer=Layer.WALL_LAYER)
+                         layer=Layer.WALL_LAYER,
+                         size=Size.VERY_LARGE)
 
 class Floor(Entity):
     '''Floor entity'''
@@ -16,7 +17,8 @@ class Floor(Entity):
         super().__init__(name='Floor',
                          glyph='.',
                          color=Colors().white,
-                         layer=Layer.FLOOR_LAYER)
+                         layer=Layer.FLOOR_LAYER,
+                         size=Size.LARGE)
 
 class StairUp(Entity):
     '''Up stair entity'''
@@ -24,7 +26,8 @@ class StairUp(Entity):
         super().__init__(name='Upstair',
                          glyph='<',
                          color=Colors().white,
-                         layer=Layer.FLOOR_LAYER)
+                         layer=Layer.FLOOR_LAYER,
+                         size=Size.VERY_LARGE)
 
 class StairDown(Entity):
     '''Down stair entity'''
@@ -32,7 +35,8 @@ class StairDown(Entity):
         super().__init__(name='Downstair',
                          glyph='>',
                          color=Colors().white,
-                         layer=Layer.FLOOR_LAYER)
+                         layer=Layer.FLOOR_LAYER,
+                         size=Size.VERY_LARGE)
 
 class Light(Entity):
     '''Light entity'''
@@ -40,7 +44,8 @@ class Light(Entity):
         super().__init__(name='Light',
                          glyph='+',
                          color=Colors().yellow,
-                         layer=Layer.OBJECT_LAYER)
+                         layer=Layer.OBJECT_LAYER,
+                         size=Size.SMALL)
         self.Activate = Activate(True)
         '''Controls whether the light is on'''
 
@@ -59,6 +64,5 @@ class Dart(Entity):
         super().__init__(name='Dart',
                          glyph=')',
                          color=Colors().red,
-                         layer=Layer.OBJECT_LAYER)
-        self.range = 1
-        self.melee = 1
+                         layer=Layer.OBJECT_LAYER,
+                         size=Size.VERY_SMALL)
