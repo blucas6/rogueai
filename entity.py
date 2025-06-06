@@ -189,10 +189,11 @@ class Entity:
             return
         frames = {}
         frames['0'] = [['' for col in row] for row in grid]
-        for pt in pts:
-            frames['0'][pt[0]][pt[1]] = '*'
+        for idx,pt in enumerate(pts):
+            frames[str(idx)] = [['' for col in row] for row in grid]
+            frames[str(idx)][pt[0]][pt[1]] = entity.glyph
         apos = [0,0]
-        animation = Animation(apos, frames, Colors().red)
+        animation = Animation(apos, frames, entity.color)
         animator = Animator()
         animator.queueUp(animation)
         return [entity]

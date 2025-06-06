@@ -297,7 +297,7 @@ class Game:
             for c,col in enumerate(row):
                 rw, cl = self.mapPosToScreenPos(r,c)
                 if lightLayer[r][c]:
-                    color = Colors().yellow_bg
+                    color = Colors().yellow
                     self.ColorBuffer[rw][cl] = color
     
     def getEnergy(self, event):
