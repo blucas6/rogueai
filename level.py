@@ -3,6 +3,7 @@ from monster import *
 from tower import *
 from player import Player
 from logger import Logger
+from animation import *
 from algo import dijkstra
 
 class Level:
@@ -160,6 +161,7 @@ class Level:
                 entity.setPosition(pos=pos,
                                 zlevel=self.z,
                                 idx=len(self.EntityLayer[r][c])-1)
+                # self.Logger.log(f'Placing entity -> {entity.name} {pos}')
         else:
             self.Logger.log(f'Entity outside of map -> {entity.name} {pos}')
 
@@ -187,7 +189,7 @@ class Level:
         end = upstairPos
         grid = [[max([e.layer for e in el]) for el in row]
                     for row in self.EntityLayer]
-        pts = dijkstra(grid, tuple(start), tuple(end))
+        pts = dijkstra(grid, tuple(start), tuple(end), diagonals=False)
         for pt in pts:
             if pt == pts[0] or pt == pts[-1]:
                 continue
@@ -234,22 +236,26 @@ class LevelManager:
     LevelManager class contains all level objects and dictates what the game
     class will display
     '''
-    def __init__(self, rng, height: int=0, width: int=0, origin: tuple=(0,0),
+    def __init__(self, game, rng, height: int=0, width: int=0, origin: tuple=(0,0),
         levels=0):
+        self.Game = game
+        '''Reference to game object'''
         self.height = height
-        '''total height (rows) in the map'''
+        '''Total height (rows) in the map'''
         self.width = width
-        '''total width (cols) in the map'''
+        '''Total width (cols) in the map'''
         self.origin = origin
-        '''top left corner of map in relation to the screen buffer'''
+        '''Top left corner of map in relation to the screen buffer'''
         self.Levels = []
-        '''holds all level objects'''
+        '''Holds all level objects'''
         self.TotalLevels = levels
-        '''how many levels to hold'''
+        '''How many levels to hold'''
         self.CurrentZ = 0
-        '''current level indicator'''
+        '''Current level indicator'''
         self.Player = None
-        '''player object'''
+        '''Player object'''
+        self.Animator = Animator()
+        '''Animation manager'''
         self.Logger = Logger()
         for l in range(self.TotalLevels):
             self.Levels.append(Level(self.height, self.width, l, rng))
@@ -299,12 +305,21 @@ class LevelManager:
 
     def updateCurrentLevel(self, playerEvent, turn, energy):
         '''
-        Go through current level layer and update entities, if an entity has 
+        Go through current level layer and update entities
+        
+        If an entity has 
         updated its own position, move it to the right spot
+
         Update the player first before everything
+
         Pass the player's action to the player entity
-        Run through entity layer again to correct any positional changes
-        Clear light layer and update lighting
+
+        Entities that affect other entities add those entities to the stack to
+        be updated next
+
+        Clear the light array every loop
+
+        Play the animations generated from an entity turn
         '''
         level = self.Levels[self.CurrentZ]
 
@@ -339,9 +354,44 @@ class LevelManager:
                     addEntities.extend(entities)
                 if addEntities:
                     for e in addEntities:
-                        entityStack.append(e)
+                        if e:
+                            self.Logger.log(f'Adding -> {e.name} {e.pos}')
+                            entityStack.append(e)
                 # move entity to correct position
                 self.fixEntityPosition(entity, level)
+            # play animations (could be queued from death)
+            self.animations()
+
+    def animations(self):
+        '''
+        Display animations
+        '''
+        if self.Animator.AnimationQueue:
+            # animations have been queued
+            frameCounter = 0
+            maxFrames = max([len(list(x.frames.keys()))
+                             for x in self.Animator.AnimationQueue])
+            for frameCounter in range(maxFrames):
+                # build the screen
+                self.Game.prepareBuffers()
+                for animation in self.Animator.AnimationQueue:
+                    if frameCounter >= len(list(animation.frames.keys())):
+                        continue
+                    ar, ac = animation.pos[0], animation.pos[1]
+                    delay = animation.delay
+                    # add frame array to the screen
+                    for r,row in enumerate(animation.frames[str(frameCounter)]):
+                        for c,col in enumerate(row):
+                            if not col:
+                                continue
+                            rw, cl = self.Game.mapPosToScreenPos(ar+r,ac+c)
+                            self.Game.ScreenBuffer[rw][cl] = col
+                            self.Game.ColorBuffer[rw][cl] = animation.color
+                # output to terminal
+                self.Game.render()
+                self.Game.Engine.pause(delay)
+            # done with all animations
+            self.Animator.clearQueue()
 
     def setupPlayerFOV(self):
         '''
@@ -355,14 +405,16 @@ class LevelManager:
         Checks if an entity is still valid on the level, otherwise it will
         remove it
         '''
-        # remove entity from the level
         if not entity.isActive:
             r = entity.EntityLayerPos[0]
             c = entity.EntityLayerPos[1]
             idx = entity.EntityLayerPos[2]
             try:
-                del level.EntityLayer[r][c][idx]
-                self.Logger.log(f'REMOVING: {entity.name} {r},{c},{idx}')
+                if level.EntityLayer[r][c][idx].id == entity.id:
+                    del level.EntityLayer[r][c][idx]
+                    # call entity death ONLY if it is the same entity
+                    entity.death(level.EntityLayer)
+                    self.Logger.log(f'REMOVING: {entity.name} {r},{c},{idx}')
             except Exception as e:
                 self.Logger.log(f'Failed to remove {entity.name}:{r},{c},{idx}')
             return True
@@ -373,29 +425,35 @@ class LevelManager:
         Moves an entity to the correct spot in the Entity Layer according
         to its own position, fixes the entity's entityLayerPos coords
         '''
-        # move entity around current level
-        r = entity.EntityLayerPos[0]
-        c = entity.EntityLayerPos[1]
-        idx = entity.EntityLayerPos[2]
-        if (entity.pos[0] != r or entity.pos[1] != c):
-            # remove entity at old spot
-            del level.EntityLayer[r][c][idx]
-            # place new entity and update r, c, idx
+        # check if entity has been placed on the level
+        if entity.EntityLayerPos[2] == -1:
+            # entity has just been created, not on level yet
             level.placeEntity(entity, entity.pos)
-        # move entity to another level
-        if (entity.z != self.CurrentZ and 
-                entity.z < self.TotalLevels):
-            try:
-                # make sure the entity is not already moved to a new level
-                if level.EntityLayer[r][c][idx].id == entity.id:
-                    # remove entity at old spot
-                    del level.EntityLayer[r][c][idx]
-                    # place entity and update r, c, idx
-                    self.Levels[entity.z].placeEntity(entity,
-                                                      entity.pos,
-                                                      specific=False)
-            except:
-                self.Logger.log(f'Skipping moving {entity.name} to new level')
+        else:
+            # move entity around current level
+            r = entity.EntityLayerPos[0]
+            c = entity.EntityLayerPos[1]
+            idx = entity.EntityLayerPos[2]
+            if (entity.pos[0] != r or entity.pos[1] != c):
+                # remove entity at old spot
+                # self.Logger.log(f'Trying to remove -> {entity.name} {entity.isActive} {entity.EntityLayerPos} {entity.pos}')
+                del level.EntityLayer[r][c][idx]
+                # place new entity and update r, c, idx
+                level.placeEntity(entity, entity.pos)
+            # move entity to another level
+            if (entity.z != self.CurrentZ and 
+                    entity.z < self.TotalLevels):
+                try:
+                    # make sure the entity is not already moved to a new level
+                    if level.EntityLayer[r][c][idx].id == entity.id:
+                        # remove entity at old spot
+                        del level.EntityLayer[r][c][idx]
+                        # place entity and update r, c, idx
+                        self.Levels[entity.z].placeEntity(entity,
+                                                        entity.pos,
+                                                        specific=False)
+                except:
+                    self.Logger.log(f'Skipping moving {entity.name} to new level')
 
     def swapLevels(self):
         '''

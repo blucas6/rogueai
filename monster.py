@@ -11,17 +11,19 @@ class Jelly(Entity):
         super().__init__(name='Jelly',
                          glyph='j',
                          color=Colors().blue,
-                         layer=Layer.MONST_LAYER)
+                         layer=Layer.MONST_LAYER,
+                         size=Size.MEDIUM)
         self.Health = Health(health=3)
         self.Attack = Attack(name='Splash',
                              damage=5,
                              alignment=Alignment.CHAOTIC)
 
-    def remove(self, entityLayer):
+    def death(self, entityLayer):
         '''
         Generate the explosion on death
         '''
         self.Messager.addMessage('It explodes!')
+        # queue animation
         frames = {}
         frames['0'] = [
             ['','' ,''],
@@ -36,7 +38,7 @@ class Jelly(Entity):
         apos = [0,0]
         apos[0] = self.pos[0]-1
         apos[1] = self.pos[1]-1
-        animation = Animation(apos, frames, Colors().white)
+        animation = Animation(apos, frames, Colors().blue)
         animator = Animator()
         animator.queueUp(animation)
         # spread damage
@@ -46,12 +48,11 @@ class Jelly(Entity):
             col = point[1]
             if (row,col) == self.pos:
                 continue
-            if self.validSpace(entityLayer, row, col):
+            if self.validBounds(entityLayer, row, col):
                 for entity in entityLayer[row][col]:
                     if hasattr(entity, 'Health'):
                         if entity.Health.changeHealth(-1*self.Attack.damage):
                             entity.remove(entityLayer)
-        super().remove(entityLayer)
 
 class Newt(Entity):
     '''
@@ -61,7 +62,8 @@ class Newt(Entity):
         super().__init__(name='Newt',
                          glyph='n',
                          color=Colors().yellow,
-                         layer=Layer.MONST_LAYER)
+                         layer=Layer.MONST_LAYER,
+                         size=Size.MEDIUM)
         self.Health = Health(health=3)
         self.Attack = Attack(name='Bite',
                              damage=1,
@@ -81,4 +83,3 @@ class Newt(Entity):
                                      entityLayer),
                     entityLayer
                 )
-        return []

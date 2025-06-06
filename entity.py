@@ -4,6 +4,8 @@ from menu import Messager
 import itertools
 from component import *
 from enum import IntEnum
+from algo import *
+from animation import *
 
 class Layer(IntEnum):
     '''
@@ -18,13 +20,33 @@ class Layer(IntEnum):
     MONST_LAYER = 2,
     WALL_LAYER = 3
 
+class Size(IntEnum):
+    '''
+    Size Types:
+        1: very small, like darts
+        2: small, like insects
+        3: medium, hobbits or kobolds
+        4: large, people
+        5: very large, orcs or trolls
+        6: giant, yep giants
+        7: humongous, titans
+    '''
+    VERY_SMALL = 1,
+    SMALL = 2,
+    MEDIUM = 3,
+    LARGE = 4,
+    VERY_LARGE = 5,
+    GIANT = 6,
+    HUMONGOUS = 7
+
 class Entity:
     '''
     Base entity class for all objects
     '''
     _id_gen = itertools.count(1)
     '''Shared ID generator'''
-    def __init__(self, name, glyph, color, layer):
+    def __init__(self, name: str, glyph: str, color: Colors, layer: Layer,
+                 size: Size):
         self.id = next(Entity._id_gen)
         '''Unique id'''
         self.name = name
@@ -47,6 +69,8 @@ class Entity:
         '''Coordinates (xyz) in the Entity Layer, set by level manager'''
         self.turn = 0
         '''Keeps track of game turns'''
+        self.size = size
+        '''Size enum for the entity'''
         self.Logger = Logger()
 
     def setPosition(self, pos: list, zlevel: int, idx: int):
@@ -56,10 +80,18 @@ class Entity:
         self.pos = pos
         self.z = zlevel
         self.EntityLayerPos = [pos[0], pos[1], idx]
-    
+
+    def death(self, *args):
+        '''
+        Overload to create an on death behavior
+        '''
+        pass
+
     def remove(self, *args):
         '''
         Triggers the removal of this entity from the entity layer
+
+        Level Manager will call death function
         '''
         self.isActive = False
 
@@ -74,11 +106,10 @@ class Entity:
             # entities that are activated are added to the entity stack
             entities = self.activate(entityLayer)
             return entities
-        return []
 
-    def validSpace(self, entityLayer, row, col):
+    def validBounds(self, entityLayer, row, col):
         '''
-        Utility for checking in the entity layer
+        Utility for checking the bounds in the entity layer
         '''
         if (row < len(entityLayer) and col < len(entityLayer[row]) and
             row >= 0 and col >= 0):
@@ -86,12 +117,12 @@ class Entity:
         return False
 
     def input(self, *args, **kwargs):
-        '''default input entity'''
-        return []
+        '''Default input entity'''
+        pass
 
     def update(self, *args, **kwargs):
-        '''default update entity'''
-        return []
+        '''Default update entity'''
+        pass
 
     def activate(self, entityLayer):
         '''
@@ -112,32 +143,59 @@ class Entity:
         row = self.pos[0] + moves[key-1][0]
         col = self.pos[1] + moves[key-1][1]
         self.Logger.log(f'{self.name} m:{(row,col)}')
-        if not self.validSpace(entityLayer, row, col):
-            return []
+        if not self.validBounds(entityLayer, row, col):
+            return
         # check if movement triggers an attack
-        if not self.attack(entityLayer, row, col):
+        attack, entities = self.attack(entityLayer, row, col)
+        if not attack:
             # no attack, move normally
             return self.move(row, col, entityLayer)
-        return []
+        # attack took place, return the (possibly) killed entity
+        return entities
 
     def attack(self, entityLayer, row, col):
         '''
         Check a square and attack it
+
         Opposing entity must have a Health and it's own Attack
+
+        Returns True if there was an attack, and the entity that was killed
         '''
         for entity in entityLayer[row][col]:
-            if (entity is not self and 
-                hasattr(entity, 'Health') and
-                hasattr(self, 'Attack') and 
-                hasattr(entity, 'Attack') and
-                entity.Attack.alignment != self.Attack.alignment):
-                if entity.Health.changeHealth(-1*self.Attack.damage):
-                    self.Messager.addKillMessage(self.name, entity.name)
-                    entity.remove(entityLayer)
-                else:
-                    self.Messager.addDamageMessage(self.name, entity.name)
+            if self.attackable(entity):
+                killed = self.dealDamage(entityLayer,
+                                         entity,
+                                         self.Attack.damage)
+                if killed:
+                    return True, killed
                 # exit if an attack was triggered
-                return True
+                return True, None
+        return False, None
+
+    def dealDamage(self, entityLayer, entity, damage):
+        '''
+        Deal damage to another entity and possibly kill it
+
+        Damage will be inversed
+
+        Returns an entity LIST that was killed
+        '''
+        damage = damage * -1
+        if entity.Health.changeHealth(damage):
+            self.Messager.addKillMessage(self.name, entity.name)
+            entity.remove(entityLayer)
+            return [entity]
+        else:
+            self.Messager.addDamageMessage(self.name, entity.name)
+    
+    def attackable(self, entity):
+        '''Checks if an entity can be attacked'''
+        if (entity is not self and 
+            hasattr(entity, 'Health') and
+            hasattr(self, 'Attack') and 
+            hasattr(entity, 'Attack') and
+            entity.Attack.alignment != self.Attack.alignment):
+            return True
         return False
     
     def moveZ(self, event, entityLayer):
@@ -158,6 +216,67 @@ class Entity:
         elif event == '>':
             self.Messager.addMessage("Can't go down here")
 
+    def throw(self, entity, entityLayer, direction=[], target=[]):
+        '''
+        Base throw method
+
+        Child classes should implement a method that uses the base method and
+        passes an entity to be thrown
+
+        If direction is included, the entity will be thrown in that direction
+        until it hits a wall layer
+
+        If target is included, the entity will be sent directly to that target's
+        position
+        '''
+        if direction:
+            # find the final position for the thrown object
+            while True:
+                r,c = entity.pos[0] + direction[0], entity.pos[1] + direction[1]
+                maxLayer = max([x.layer for x in entityLayer[r][c]])
+                if maxLayer > Layer.OBJECT_LAYER:
+                    break
+                else:
+                    entity.setPosition(pos=[r,c], zlevel=self.z, idx=-1)
+        elif target:
+            # set the known position
+            entity.setPosition(pos=target, zlevel=self.z, idx=-1)
+        else:
+            return
+        
+        # construct a grid of 1,0 (makes sure path to end point is valid)
+        grid = [[1 if max([int(x.layer) for x in elist])
+                 > Layer.MONST_LAYER else 0
+                 for elist in row]
+                 for row in entityLayer]
+        code, pts = astar(grid, tuple(self.pos), tuple(entity.pos))
+        if code != 1:
+            self.Logger.log(f'Error: failed to throw -> {code}')
+            return
+
+        # deal damage
+        dmg = entity.size * 2
+        r,c = entity.pos[0], entity.pos[1]
+        for e in entityLayer[r][c]:
+            if hasattr(e, 'Health'):
+                entities = self.dealDamage(entityLayer, e, dmg)
+
+        # create the animation
+        frames = {}
+        for idx,pt in enumerate(pts):
+            frames[str(idx)] = [['' for col in row] for row in grid]
+            frames[str(idx)][pt[0]][pt[1]] = entity.glyph
+        apos = [0,0]
+        animation = Animation(apos, frames, entity.color)
+        animator = Animator()
+        animator.queueUp(animation)
+        # return the thrown entity
+        elist = [entity]
+        if entities:
+            # include killed entities if there were any
+            elist.extend(entities)
+        return elist
+
     def doAction(self, event, entityLayer):
         '''
         Entrance for entity actions
@@ -166,4 +285,5 @@ class Entity:
             return self.movement(int(event), entityLayer)
         elif event == '<' or event == '>':
             self.moveZ(event, entityLayer)
-        return []
+        elif event == 't':
+            return self.fire(entityLayer)
