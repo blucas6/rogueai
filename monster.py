@@ -18,7 +18,7 @@ class Jelly(Entity):
                              damage=5,
                              alignment=Alignment.CHAOTIC)
 
-    def remove(self, entityLayer):
+    def death(self, entityLayer):
         '''
         Generate the explosion on death
         '''
@@ -53,7 +53,6 @@ class Jelly(Entity):
                     if hasattr(entity, 'Health'):
                         if entity.Health.changeHealth(-1*self.Attack.damage):
                             entity.remove(entityLayer)
-        super().remove(entityLayer)
 
 class Newt(Entity):
     '''

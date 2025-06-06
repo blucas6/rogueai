@@ -6,7 +6,6 @@ from level import LevelManager
 from colors import Colors
 from logger import Logger
 from menu import MenuManager, GameState, Messager
-from animation import Animator
 import secrets
 
 class Game:
@@ -56,7 +55,6 @@ class Game:
                                     for _ in range(self.termRows-1)]
         self.ColorBuffer = [[Colors().white for _ in range(self.termCols-1)] 
                                     for _ in range(self.termRows-1)]
-        self.Animator = Animator()
 
     def noDisplaySetup(self):
         '''
@@ -79,6 +77,7 @@ class Game:
         self.RNG = random.Random(self.seed)
         self.Logger.log(f'SEED: {self.seed}')
         self.LevelManager = LevelManager(
+                                self,
                                 self.RNG,
                                 height=10,
                                 width=20,
@@ -123,8 +122,6 @@ class Game:
             self.prepareBuffers()
             # output screen buffer to terminal
             self.render()
-            # display any queued animations all at once
-            self.animations()
 
     def messages(self):
         '''
@@ -185,36 +182,6 @@ class Game:
             self.Messager.addMessage('You died!')
             self.stateMachine('won')
     
-    def animations(self):
-        '''
-        Display animations
-        '''
-        if self.Animator.AnimationQueue:
-            # animations have been queued
-            frameCounter = 0
-            maxFrames = max([len(list(x.frames.keys())) for x in self.Animator.AnimationQueue])
-            for frameCounter in range(maxFrames):
-                # build the screen
-                self.prepareBuffers()
-                for animation in self.Animator.AnimationQueue:
-                    if frameCounter >= len(list(animation.frames.keys())):
-                        continue
-                    apos = animation.pos
-                    delay = animation.delay
-                    # add frame array to the screen
-                    for r,row in enumerate(animation.frames[str(frameCounter)]):
-                        for c,col in enumerate(row):
-                            if not col:
-                                continue
-                            rw, cl = self.mapPosToScreenPos(apos[0]+r,apos[1]+c)
-                            self.ScreenBuffer[rw][cl] = col
-                            self.ColorBuffer[rw][cl] = animation.color
-                # output to terminal
-                self.render()
-                self.Engine.pause(delay)
-            # done with all animations
-            self.Animator.clearQueue()
-
     def render(self):
         '''
         Render the current game state to the screen
@@ -303,9 +270,12 @@ class Game:
     def getEnergy(self, event):
         '''
         Process key press event from engine
-        -1 does not count as an action
-        0 counts as a clearing action (msg queue)
-        1 counts as a energy for updating entities
+
+             -1: does not count as an action
+
+            0 : counts as a clearing action (msg queue)
+
+            1 : counts as a energy for updating entities
         '''
         # disregard empty events
         if not event:
@@ -332,7 +302,9 @@ class Game:
         return -1
 
     def stateMachine(self, event):
-        '''Change the game state'''
+        '''
+        Change the game state
+        '''
         if event == 'msgQFull' and self.GameState == GameState.PLAYING:
             # too many messages to display, block user input until resolved
             self.GameState = GameState.PAUSEONMSG

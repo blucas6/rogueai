@@ -80,10 +80,18 @@ class Entity:
         self.pos = pos
         self.z = zlevel
         self.EntityLayerPos = [pos[0], pos[1], idx]
-    
+
+    def death(self, *args):
+        '''
+        Overload to create an on death behavior
+        '''
+        pass
+
     def remove(self, *args):
         '''
         Triggers the removal of this entity from the entity layer
+
+        Level Manager will call death function
         '''
         self.isActive = False
 
@@ -138,33 +146,45 @@ class Entity:
         if not self.validBounds(entityLayer, row, col):
             return
         # check if movement triggers an attack
-        if not self.attack(entityLayer, row, col):
+        attack, entities = self.attack(entityLayer, row, col)
+        if not attack:
             # no attack, move normally
             return self.move(row, col, entityLayer)
+        # attack took place, return the (possibly) killed entity
+        return entities
 
     def attack(self, entityLayer, row, col):
         '''
         Check a square and attack it
 
         Opposing entity must have a Health and it's own Attack
+
+        Returns True if there was an attack, and the entity that was killed
         '''
         for entity in entityLayer[row][col]:
             if self.attackable(entity):
-                self.dealDamage(entityLayer, entity, self.Attack.damage)
+                killed = self.dealDamage(entityLayer,
+                                         entity,
+                                         self.Attack.damage)
+                if killed:
+                    return True, killed
                 # exit if an attack was triggered
-                return True
-        return False
+                return True, None
+        return False, None
 
     def dealDamage(self, entityLayer, entity, damage):
         '''
         Deal damage to another entity and possibly kill it
 
         Damage will be inversed
+
+        Returns an entity LIST that was killed
         '''
         damage = damage * -1
         if entity.Health.changeHealth(damage):
             self.Messager.addKillMessage(self.name, entity.name)
             entity.remove(entityLayer)
+            return [entity]
         else:
             self.Messager.addDamageMessage(self.name, entity.name)
     
@@ -239,7 +259,7 @@ class Entity:
         r,c = entity.pos[0], entity.pos[1]
         for e in entityLayer[r][c]:
             if hasattr(e, 'Health'):
-                self.dealDamage(entityLayer, e, dmg)
+                entities = self.dealDamage(entityLayer, e, dmg)
 
         # create the animation
         frames = {}
@@ -251,7 +271,11 @@ class Entity:
         animator = Animator()
         animator.queueUp(animation)
         # return the thrown entity
-        return [entity]
+        elist = [entity]
+        if entities:
+            # include killed entities if there were any
+            elist.extend(entities)
+        return elist
 
     def doAction(self, event, entityLayer):
         '''

@@ -92,6 +92,7 @@ class Health:
     def changeHealth(self, amount):
         '''
         Changes the health bar by an amount
+
         Returns true if health change causes death
         '''
         self.currentHealth += amount
