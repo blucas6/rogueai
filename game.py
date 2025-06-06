@@ -149,16 +149,14 @@ class Game:
         '''
         # clear current message
         self.MenuManager.MessageMenu.clear()
-        # check for win condition
-        if not self.GameState == GameState.WON and self.win():
-            self.Messager.addMessage('You won!')
-            self.stateMachine('won')
+
         # update all entities
         self.LevelManager.updateCurrentLevel(
             event,
             self.MenuManager.TurnMenu.count,
             energy
         )
+
         # player has moved to a new level
         if self.LevelManager.swapLevels():
             # update all entities again
@@ -171,16 +169,24 @@ class Game:
                 self.LevelManager.getCurrentLevel().EntityLayer)
             # update level menu on level change
             self.MenuManager.DepthMenu.update(self.LevelManager.CurrentZ)
+
         # update player FOV
         self.LevelManager.setupPlayerFOV()
+
         # update health menu
         self.MenuManager.HealthMenu.update(
             self.LevelManager.Player.Health.currentHealth,
             self.LevelManager.Player.Health.maxHealth)
+
         # check for death
         if not self.GameState == GameState.WON and self.lose():
             self.Messager.addMessage('You died!')
-            self.stateMachine('won')
+            self.stateMachine('endgame')
+
+        # check for win condition
+        if not self.GameState == GameState.WON and self.win():
+            self.Messager.addMessage('You won!')
+            self.stateMachine('endgame')
     
     def render(self):
         '''
@@ -311,7 +317,7 @@ class Game:
         elif event == 'msgQEmpty' and self.GameState == GameState.PAUSEONMSG:
             # if paused and msg queue is cleared, go back to normal
             self.GameState = GameState.PLAYING
-        elif event == 'won':
+        elif event == 'endgame':
             self.GameState = GameState.WON
         elif event == 'reset':
             self.GameState = GameState.PLAYING
