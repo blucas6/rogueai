@@ -6,7 +6,6 @@ from level import LevelManager
 from colors import Colors
 from logger import Logger, Timing
 from menu import MenuManager, GameState, Messager
-from animation import Animator
 import secrets
 
 class Game:
@@ -45,6 +44,8 @@ class Game:
         '''Use player FOV to generate map'''
         self.specificSeed = specificSeed
         '''Set when recreating a seed'''
+        self.previousEvent = ''
+        '''Used for key motions of multiple characters'''
         self.allowTiming = timing
         '''Timing turns off logging and takes timing measurements'''
         self.Timing = Timing()
@@ -63,7 +64,6 @@ class Game:
                                     for _ in range(self.termRows-1)]
         self.ColorBuffer = [[Colors().white for _ in range(self.termCols-1)] 
                                     for _ in range(self.termRows-1)]
-        self.Animator = Animator()
 
     def noDisplaySetup(self):
         '''
@@ -88,6 +88,7 @@ class Game:
         self.RNG = random.Random(self.seed)
         self.Logger.log(f'SEED: {self.seed}')
         self.LevelManager = LevelManager(
+                                self,
                                 self.RNG,
                                 height=10,
                                 width=20,
@@ -96,7 +97,7 @@ class Game:
         self.MenuManager = MenuManager()
         self.Messager = Messager()
         startPos = [1,1]
-        self.LevelManager.defaultLevelSetupWalls(startPos)
+        self.LevelManager.defaultLevelSetup(startPos)
         self.LevelManager.addPlayer(pos=startPos, z=0)
         self.LevelManager.Player.update(
             self.LevelManager.getCurrentLevel().EntityLayer
@@ -104,7 +105,7 @@ class Game:
         if self.allowTiming:
             self.Timing.end()
         # update the game one time (generates FOV)
-        self.loop(event='', energy=0)
+        self.loop(event=' ', energy=0)
 
     def start(self, stdscr: curses.window=None):
         '''
@@ -130,7 +131,9 @@ class Game:
             # check for events
             event,energy = self.processEvents()
             # update the game
-            if energy > -1:
+            if energy == 0:
+                self.clearState()
+            elif energy > 0:
                 self.loop(event, energy)
             # update and grab any messages in the queue
             self.messages()
@@ -138,8 +141,6 @@ class Game:
             self.prepareBuffers()
             # output screen buffer to terminal
             self.render()
-            # display any queued animations all at once
-            self.animations()
         self.end()
 
     def messages(self):
@@ -159,8 +160,18 @@ class Game:
         Gets an event and it's respective energy (continuously polling)
         '''
         event = self.Engine.readInput()
-        energy = self.getEnergy(event)
+        if self.GameState != GameState.RUNNING:
+            energy,event = self.getEnergy(event)
+        else:
+            energy = 1
+            event = ' '
+            self.Engine.pause(self.LevelManager.Player.Charge.frameSpeed)
         return event, energy
+
+    def clearState(self):
+        '''Clears the current message'''
+        self.Logger.log('clearing the state')
+        self.MenuManager.MessageMenu.clear()
 
     def loop(self, event, energy):
         '''
@@ -168,18 +179,24 @@ class Game:
         '''
         if self.allowTiming:
             self.Timing.start('Game Loop')
+
+        # event was valid, save it
+        self.previousEvent = event
+
+
+        # update the turn
+        self.MenuManager.TurnMenu.update()
+
         # clear current message
         self.MenuManager.MessageMenu.clear()
-        # check for win condition
-        if not self.GameState == GameState.WON and self.win():
-            self.Messager.addMessage('You won!')
-            self.stateMachine('won')
+
         # update all entities
         self.LevelManager.updateCurrentLevel(
             event,
             self.MenuManager.TurnMenu.count,
             energy
         )
+
         # player has moved to a new level
         if self.LevelManager.swapLevels():
             # update all entities again
@@ -192,47 +209,31 @@ class Game:
                 self.LevelManager.getCurrentLevel().EntityLayer)
             # update level menu on level change
             self.MenuManager.DepthMenu.update(self.LevelManager.CurrentZ)
+
         # update player FOV
         self.LevelManager.setupPlayerFOV()
+
         # update health menu
         self.MenuManager.HealthMenu.update(
             self.LevelManager.Player.Health.currentHealth,
             self.LevelManager.Player.Health.maxHealth)
+
         # check for death
-        if not self.GameState == GameState.WON and self.lose():
+        if not self.GameState == GameState.END and self.lose():
             self.Messager.addMessage('You died!')
-            self.stateMachine('won')
+            self.stateMachine('endgame')
+
+        # check for win condition
+        if not self.GameState == GameState.END and self.win():
+            self.Messager.addMessage('You won!')
+            self.stateMachine('endgame')
+
+        # check to end the charge
+        if not self.LevelManager.Player.Charge.charging:
+            self.stateMachine('endrun')
+        
         if self.allowTiming:
             self.Timing.end()
-    
-    def animations(self):
-        '''
-        Display animations
-        '''
-        if self.Animator.AnimationQueue:
-            # animations have been queued
-            frameCounter = 0
-            maxFrames = max([len(list(x.frames.keys())) for x in self.Animator.AnimationQueue])
-            for frameCounter in range(maxFrames):
-                # build the screen
-                self.prepareBuffers()
-                for animation in self.Animator.AnimationQueue:
-                    if frameCounter >= len(list(animation.frames.keys())):
-                        continue
-                    apos = animation.pos
-                    delay = animation.delay
-                    # add frame array to the screen
-                    for r,row in enumerate(animation.frames[str(frameCounter)]):
-                        for c,col in enumerate(row):
-                            if not col:
-                                continue
-                            rw, cl = self.mapPosToScreenPos(apos[0]+r,apos[1]+c)
-                            self.ScreenBuffer[rw][cl] = col
-                # output to terminal
-                self.render()
-                self.Engine.pause(delay)
-            # done with all animations
-            self.Animator.clearQueue()
 
     def render(self):
         '''
@@ -304,7 +305,7 @@ class Game:
                     color = entityLayer[r][c][idx].color
                 if not self.boundsCheck(self.ScreenBuffer, rw, cl):
                     continue
-                # add character
+                # add glyph
                 self.ScreenBuffer[rw][cl] = glyph
                 if not self.boundsCheck(self.ColorBuffer, rw, cl):
                     continue
@@ -316,19 +317,36 @@ class Game:
             for c,col in enumerate(row):
                 rw, cl = self.mapPosToScreenPos(r,c)
                 if lightLayer[r][c]:
-                    color = Colors().yellow_bg
+                    color = Colors().yellow
                     self.ColorBuffer[rw][cl] = color
     
     def getEnergy(self, event):
         '''
         Process key press event from engine
-        -1 does not count as an action
-        0 counts as a clearing action (msg queue)
-        1 counts as a energy for updating entities
+
+             -1: does not count as an action
+
+            0 : will not cause an update because turn counter does not increase,
+                updates menus
+
+            1 : counts as a energy for updating entities
         '''
         # disregard empty events
         if not event:
-            return -1
+            return -1,event
+        if self.GameState == GameState.MOTION:
+            # MOTION EVENTS
+            if self.previousEvent == 't' or self.previousEvent == '5':
+                # throwing expects a direction
+                self.stateMachine('donemotion')
+                if not event.isdigit() or event == '5':
+                    self.Messager.addMessage('Invalid direction!')
+                    return 0,event
+                # valid direction increment turn
+                # return the combined event
+                if self.previousEvent == '5':
+                    self.stateMachine('startrun')
+                return 1,self.previousEvent+event
         if event == chr(ascii.ESC) or event == 'q':
             # QUIT
             self.running = False
@@ -341,24 +359,44 @@ class Game:
             self.playerFOV = not self.playerFOV
         elif event == ' ':
             # DO NOTHING - clears msg queue
-            return 0
+            return 0,event
+        elif (event == 't' or event == '5' and
+              self.GameState == GameState.PLAYING):
+            # Multi key action
+            self.Messager.addMessage('Direction?')
+            self.stateMachine('motion')
+            self.previousEvent = event
+            return 0,event
         elif self.GameState == GameState.PLAYING:
             # PLAYER ACTION
-            # update turn counter
-            self.MenuManager.TurnMenu.update()
-            return 1
+            self.Logger.log(f'player action: {event}')
+            return 1,event
         # Defaults to returning -1 for no action
-        return -1
+        return -1,event
 
     def stateMachine(self, event):
-        '''Change the game state'''
+        '''
+        Change the game state
+        '''
         if event == 'msgQFull' and self.GameState == GameState.PLAYING:
             # too many messages to display, block user input until resolved
             self.GameState = GameState.PAUSEONMSG
         elif event == 'msgQEmpty' and self.GameState == GameState.PAUSEONMSG:
             # if paused and msg queue is cleared, go back to normal
             self.GameState = GameState.PLAYING
-        elif event == 'won':
-            self.GameState = GameState.WON
+        elif event == 'endgame':
+            self.GameState = GameState.END
         elif event == 'reset':
+            self.GameState = GameState.PLAYING
+        elif event == 'motion' and self.GameState == GameState.PLAYING:
+            # start the key motion
+            self.GameState = GameState.MOTION
+        elif event == 'donemotion' and self.GameState == GameState.MOTION:
+            # end the key motion
+            self.GameState = GameState.PLAYING
+        elif event == 'startrun' and self.GameState == GameState.PLAYING:
+            # start the charge
+            self.GameState = GameState.RUNNING
+        elif event == 'endrun' and self.GameState == GameState.RUNNING:
+            # end the charge
             self.GameState = GameState.PLAYING
