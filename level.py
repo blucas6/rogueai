@@ -275,6 +275,7 @@ class LevelManager:
             else:
                 downstairPos = level.default(downstairPos=downstairPos)
             level.generateMonsters(playerPos)
+            level.addLighting()
 
     def defaultLevelSetupWalls(self, playerPos):
         '''
