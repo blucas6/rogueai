@@ -94,7 +94,7 @@ class Game:
             self.LevelManager.getCurrentLevel().EntityLayer
         )
         # update the game one time (generates FOV)
-        self.loop(event='', energy=0)
+        self.loop(event=' ', energy=0)
 
     def start(self, stdscr: curses.window=None):
         '''
@@ -116,7 +116,9 @@ class Game:
             # check for events
             event,energy = self.processEvents()
             # update the game
-            if energy > -1:
+            if energy == 0:
+                self.clearState()
+            elif energy > 0:
                 self.loop(event, energy)
             # update and grab any messages in the queue
             self.messages()
@@ -145,12 +147,20 @@ class Game:
         energy,event = self.getEnergy(event)
         return event, energy
 
+    def clearState(self):
+        '''Clears the current message'''
+        self.Logger.log('clearing the state')
+        self.MenuManager.MessageMenu.clear()
+
     def loop(self, event, energy):
         '''
         Execute one loop in the game loop
         '''
         # event was valid, save it
         self.previousEvent = event
+
+        # update the turn
+        self.MenuManager.TurnMenu.update()
 
         # clear current message
         self.MenuManager.MessageMenu.clear()
@@ -294,14 +304,13 @@ class Game:
             return -1,event
         if self.GameState == GameState.MOTION:
             # MOTION EVENTS
-            if self.previousEvent == 't':
+            if self.previousEvent == 't' or self.previousEvent == '5':
                 # throwing expects a direction
                 self.stateMachine('donemotion')
                 if not event.isdigit() or event == '5':
                     self.Messager.addMessage('Invalid direction!')
                     return 0,event
                 # valid direction increment turn
-                self.MenuManager.TurnMenu.update()
                 # return the combined event
                 return 1,self.previousEvent+event
         if event == chr(ascii.ESC) or event == 'q':
@@ -317,15 +326,16 @@ class Game:
         elif event == ' ':
             # DO NOTHING - clears msg queue
             return 0,event
-        elif event == 't' and self.GameState == GameState.PLAYING:
+        elif (event == 't' or event == '5' and
+              self.GameState == GameState.PLAYING):
             # Multi key action
             self.Messager.addMessage('Direction?')
             self.stateMachine('motion')
+            self.previousEvent = event
             return 0,event
         elif self.GameState == GameState.PLAYING:
             # PLAYER ACTION
-            # update turn counter
-            self.MenuManager.TurnMenu.update()
+            self.Logger.log(f'player action: {event}')
             return 1,event
         # Defaults to returning -1 for no action
         return -1,event
@@ -345,6 +355,8 @@ class Game:
         elif event == 'reset':
             self.GameState = GameState.PLAYING
         elif event == 'motion' and self.GameState == GameState.PLAYING:
+            # start the key motion
             self.GameState = GameState.MOTION
         elif event == 'donemotion' and self.GameState == GameState.MOTION:
+            # end the key motion
             self.GameState = GameState.PLAYING

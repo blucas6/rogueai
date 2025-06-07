@@ -323,6 +323,8 @@ class LevelManager:
 
         Play the animations generated from an entity turn
         '''
+        self.Logger.log(f'Taking a turn {playerEvent}')
+
         level = self.Levels[self.CurrentZ]
 
         # clear light layer
@@ -415,6 +417,10 @@ class LevelManager:
             r = entity.EntityLayerPos[0]
             c = entity.EntityLayerPos[1]
             idx = entity.EntityLayerPos[2]
+            if idx >= len(level.EntityLayer[r][c]):
+                # not enough entity on the square for this entity to still be
+                # here, must have already been removed
+                return True
             try:
                 if level.EntityLayer[r][c][idx].id == entity.id:
                     del level.EntityLayer[r][c][idx]
