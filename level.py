@@ -155,7 +155,7 @@ class Level:
                         r,c = self.findFreeSpace(entity, pos)
                     maxLayer = max([x.layer for x in self.EntityLayer[r][c]])
                     if entity.layer <= maxLayer:
-                        self.Logger.log(f'Layer issue with placement -> {entity.name} {maxLayer} {self.EntityLayer[r][c]}')
+                        self.Logger.log(f'Error: layer issue with placement -> {entity.name} {maxLayer} {self.EntityLayer[r][c]}')
                         return
                 self.EntityLayer[r][c].append(entity)
                 entity.setPosition(pos=pos,
@@ -163,7 +163,7 @@ class Level:
                                 idx=len(self.EntityLayer[r][c])-1)
                 # self.Logger.log(f'Placing entity -> {entity.name} {pos}')
         else:
-            self.Logger.log(f'Entity outside of map -> {entity.name} {pos}')
+            self.Logger.log(f'Error: entity outside of map -> {entity.name} {pos}')
 
     def generateStairs(self, playerPos=[], downstairPos=[], upstair=True):
         '''
@@ -302,7 +302,7 @@ class LevelManager:
         if len(self.Levels) > 0 and z < len(self.Levels):
             self.Levels[z].placeEntity(self.Player, pos)
         else:
-            self.Logger.log(f'Invalid placement of player!')
+            self.Logger.log(f'Error: invalid placement of player!')
 
     def updateCurrentLevel(self, playerEvent, turn, energy):
         '''
@@ -417,7 +417,7 @@ class LevelManager:
                     entity.death(level.EntityLayer)
                     self.Logger.log(f'REMOVING: {entity.name} {r},{c},{idx}')
             except Exception as e:
-                self.Logger.log(f'Failed to remove {entity.name}:{r},{c},{idx}')
+                self.Logger.log(f'Error: failed to remove {entity.name}:{r},{c},{idx}')
             return True
         return False
     

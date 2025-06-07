@@ -121,7 +121,11 @@ class Entity:
         pass
 
     def update(self, *args, **kwargs):
-        '''Default update entity'''
+        '''
+        Default update entity
+        
+        Update may be called several times per turn
+        '''
         pass
 
     def activate(self, entityLayer):
@@ -229,19 +233,26 @@ class Entity:
         If target is included, the entity will be sent directly to that target's
         position
         '''
-        if direction:
+        if (direction and len(direction) == 2 and
+            not (direction[0] == 0 and direction[1] == 0)): 
             # find the final position for the thrown object
+            # start object from entity throwing position
+            objr, objc = self.pos[0], self.pos[1]
             while True:
-                r,c = entity.pos[0] + direction[0], entity.pos[1] + direction[1]
+                r,c = objr + direction[0], objc + direction[1]
                 maxLayer = max([x.layer for x in entityLayer[r][c]])
-                if maxLayer > Layer.OBJECT_LAYER:
+                if maxLayer == Layer.MONST_LAYER:
+                    objr, objc = r, c
                     break
-                else:
-                    entity.setPosition(pos=[r,c], zlevel=self.z, idx=-1)
+                elif maxLayer == Layer.WALL_LAYER:
+                    break
+                objr, objc = r, c
+            entity.setPosition(pos=[objr,objc], zlevel=self.z, idx=-1)
         elif target:
             # set the known position
             entity.setPosition(pos=target, zlevel=self.z, idx=-1)
         else:
+            self.Logger.log(f'Error: invalid throw')
             return
         
         # construct a grid of 1,0 (makes sure path to end point is valid)
@@ -255,6 +266,7 @@ class Entity:
             return
 
         # deal damage
+        entities = []
         dmg = entity.size * 2
         r,c = entity.pos[0], entity.pos[1]
         for e in entityLayer[r][c]:
@@ -267,7 +279,8 @@ class Entity:
             frames[str(idx)] = [['' for col in row] for row in grid]
             frames[str(idx)][pt[0]][pt[1]] = entity.glyph
         apos = [0,0]
-        animation = Animation(apos, frames, entity.color)
+        delay = 0.05
+        animation = Animation(apos, frames, entity.color, delay=delay)
         animator = Animator()
         animator.queueUp(animation)
         # return the thrown entity
@@ -285,5 +298,5 @@ class Entity:
             return self.movement(int(event), entityLayer)
         elif event == '<' or event == '>':
             self.moveZ(event, entityLayer)
-        elif event == 't':
-            return self.fire(entityLayer)
+        elif event[0] == 't':
+            return self.fire(entityLayer, event)

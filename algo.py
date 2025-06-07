@@ -94,14 +94,21 @@ def astar(grid, src, dest, debug=False):
     # Check if the source and destination are valid
     if (not is_valid(grid, src[0], src[1]) or
         not is_valid(grid, dest[0], dest[1])):
+        if debug:
+            debugGrid(grid, [])
         return 2, []
 
     # Check if the source and destination are unblocked
-    if not is_unblocked(grid, src[0], src[1]) or not is_unblocked(grid, dest[0], dest[1]):
+    if (not is_unblocked(grid, src[0], src[1]) or not
+        is_unblocked(grid, dest[0], dest[1])):
+        if debug:
+            debugGrid(grid, [])
         return 3, []
 
     # Check if we are already at the destination
     if is_destination(src[0], src[1], dest):
+        if debug:
+            debugGrid(grid, [])
         return 4, []
 
     # Initialize the closed list (visited cells)

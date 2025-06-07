@@ -43,6 +43,8 @@ class Game:
         '''Use player FOV to generate map'''
         self.specificSeed = specificSeed
         '''Set when recreating a seed'''
+        self.previousEvent = ''
+        '''Used for key motions of multiple characters'''
         self.Logger = Logger()
     
     def displaySetup(self, stdscr: curses.window, timeDelay: int=None):
@@ -140,13 +142,16 @@ class Game:
         Gets an event and it's respective energy (continuously polling)
         '''
         event = self.Engine.readInput()
-        energy = self.getEnergy(event)
+        energy,event = self.getEnergy(event)
         return event, energy
 
     def loop(self, event, energy):
         '''
         Execute one loop in the game loop
         '''
+        # event was valid, save it
+        self.previousEvent = event
+
         # clear current message
         self.MenuManager.MessageMenu.clear()
 
@@ -179,12 +184,12 @@ class Game:
             self.LevelManager.Player.Health.maxHealth)
 
         # check for death
-        if not self.GameState == GameState.WON and self.lose():
+        if not self.GameState == GameState.END and self.lose():
             self.Messager.addMessage('You died!')
             self.stateMachine('endgame')
 
         # check for win condition
-        if not self.GameState == GameState.WON and self.win():
+        if not self.GameState == GameState.END and self.win():
             self.Messager.addMessage('You won!')
             self.stateMachine('endgame')
     
@@ -279,13 +284,26 @@ class Game:
 
              -1: does not count as an action
 
-            0 : counts as a clearing action (msg queue)
+            0 : will not cause an update because turn counter does not increase,
+                updates menus
 
             1 : counts as a energy for updating entities
         '''
         # disregard empty events
         if not event:
-            return -1
+            return -1,event
+        if self.GameState == GameState.MOTION:
+            # MOTION EVENTS
+            if self.previousEvent == 't':
+                # throwing expects a direction
+                self.stateMachine('donemotion')
+                if not event.isdigit() or event == '5':
+                    self.Messager.addMessage('Invalid direction!')
+                    return 0,event
+                # valid direction increment turn
+                self.MenuManager.TurnMenu.update()
+                # return the combined event
+                return 1,self.previousEvent+event
         if event == chr(ascii.ESC) or event == 'q':
             # QUIT
             self.running = False
@@ -298,14 +316,19 @@ class Game:
             self.playerFOV = not self.playerFOV
         elif event == ' ':
             # DO NOTHING - clears msg queue
-            return 0
+            return 0,event
+        elif event == 't' and self.GameState == GameState.PLAYING:
+            # Multi key action
+            self.Messager.addMessage('Direction?')
+            self.stateMachine('motion')
+            return 0,event
         elif self.GameState == GameState.PLAYING:
             # PLAYER ACTION
             # update turn counter
             self.MenuManager.TurnMenu.update()
-            return 1
+            return 1,event
         # Defaults to returning -1 for no action
-        return -1
+        return -1,event
 
     def stateMachine(self, event):
         '''
@@ -318,6 +341,10 @@ class Game:
             # if paused and msg queue is cleared, go back to normal
             self.GameState = GameState.PLAYING
         elif event == 'endgame':
-            self.GameState = GameState.WON
+            self.GameState = GameState.END
         elif event == 'reset':
+            self.GameState = GameState.PLAYING
+        elif event == 'motion' and self.GameState == GameState.PLAYING:
+            self.GameState = GameState.MOTION
+        elif event == 'donemotion' and self.GameState == GameState.MOTION:
             self.GameState = GameState.PLAYING

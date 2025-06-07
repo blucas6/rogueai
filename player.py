@@ -50,6 +50,7 @@ class Player(Entity):
         '''
         Receives the player event and uses it
         '''
+        self.Logger.log(f'Player event: {event}')
         return self.doAction(event, entityLayer)
 
     def setupFOV(self, entityLayer, lightLayer):
@@ -100,21 +101,28 @@ class Player(Entity):
             pts.append((row,col))
         return pts
     
-    def fire(self, entityLayer):
+    def fire(self, entityLayer, event):
         '''
         Throw an object
         '''
-        pts = self.Brain.getFOVFromEntityLayer(entityLayer, self.pos)
-        targetPos = []
-        for pt in pts:
-            for entity in entityLayer[pt[0]][pt[1]]:
-                if (self.attackable(entity) and 
-                    (not targetPos or
-                     math.dist(self.pos,entity.pos) <
-                     math.dist(self.pos,targetPos))
-                    ):
-                    targetPos = list(entity.pos)
-        if targetPos:
-            return self.throw(Dart(), entityLayer, target=targetPos)
+        if len(event) == 1:
+            # zap to target
+            pts = self.Brain.getFOVFromEntityLayer(entityLayer, self.pos)
+            targetPos = []
+            for pt in pts:
+                for entity in entityLayer[pt[0]][pt[1]]:
+                    if (self.attackable(entity) and 
+                        (not targetPos or
+                        math.dist(self.pos,entity.pos) <
+                        math.dist(self.pos,targetPos))
+                        ):
+                        targetPos = list(entity.pos)
+            if targetPos:
+                return self.throw(Dart(), entityLayer, target=targetPos)
+            else:
+                Messager().addMessage('No targets!')
         else:
-            Messager().addMessage('No targets!')
+            # throw in a direction
+            if event[1].isdigit():
+                direction = ONE_LAYER_CIRCLE[int(event[1])-1]
+                return self.throw(Dart(), entityLayer, direction=direction)

@@ -68,7 +68,7 @@ class Environment:
         '''collect game information for observations here'''
         turns = self.Game.MenuManager.TurnMenu.count
         score = self.Game.LevelManager.CurrentZ
-        won = True if self.Game.MenuManager.State == GameState.WON else False
+        won = True if self.Game.MenuManager.State == GameState.END else False
         return turns, score, won
 
     def reset(self):

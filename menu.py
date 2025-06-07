@@ -146,9 +146,17 @@ class HealthMenu(Menu):
         self.text = '['+amount*'\u2588'+(self.HealthBarLength-amount)*' '+']'
 
 class GameState(Enum):
+    '''
+    Game States:
+        1: User inputting actions to the player
+        2: Game is over (winning/losing)
+        3: Pausing will block player actions
+        4: Motion will block player actions until the second event arrives
+    '''
     PLAYING = 1
-    WON = 2
+    END = 2
     PAUSEONMSG = 3
+    MOTION = 4
 
 class MenuManager:
     '''
