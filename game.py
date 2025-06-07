@@ -177,6 +177,8 @@ class Game:
         '''
         Execute one loop in the game loop
         '''
+
+        # timing
         if self.allowTiming:
             self.Timing.start('Game Loop')
 
@@ -231,7 +233,8 @@ class Game:
         # check to end the charge
         if not self.LevelManager.Player.Charge.charging:
             self.stateMachine('endrun')
-        
+
+        # timing
         if self.allowTiming:
             self.Timing.end()
 
