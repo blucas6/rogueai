@@ -144,7 +144,12 @@ class Game:
         Gets an event and it's respective energy (continuously polling)
         '''
         event = self.Engine.readInput()
-        energy,event = self.getEnergy(event)
+        if self.GameState != GameState.RUNNING:
+            energy,event = self.getEnergy(event)
+        else:
+            energy = 1
+            event = ' '
+            self.Engine.pause(self.LevelManager.Player.Charge.frameSpeed)
         return event, energy
 
     def clearState(self):
@@ -158,6 +163,7 @@ class Game:
         '''
         # event was valid, save it
         self.previousEvent = event
+
 
         # update the turn
         self.MenuManager.TurnMenu.update()
@@ -202,7 +208,11 @@ class Game:
         if not self.GameState == GameState.END and self.win():
             self.Messager.addMessage('You won!')
             self.stateMachine('endgame')
-    
+
+        # check to end the charge
+        if not self.LevelManager.Player.Charge.charging:
+            self.stateMachine('endrun')
+
     def render(self):
         '''
         Render the current game state to the screen
@@ -312,6 +322,8 @@ class Game:
                     return 0,event
                 # valid direction increment turn
                 # return the combined event
+                if self.previousEvent == '5':
+                    self.stateMachine('startrun')
                 return 1,self.previousEvent+event
         if event == chr(ascii.ESC) or event == 'q':
             # QUIT
@@ -359,4 +371,10 @@ class Game:
             self.GameState = GameState.MOTION
         elif event == 'donemotion' and self.GameState == GameState.MOTION:
             # end the key motion
+            self.GameState = GameState.PLAYING
+        elif event == 'startrun' and self.GameState == GameState.PLAYING:
+            # start the charge
+            self.GameState = GameState.RUNNING
+        elif event == 'endrun' and self.GameState == GameState.RUNNING:
+            # end the charge
             self.GameState = GameState.PLAYING

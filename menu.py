@@ -41,6 +41,14 @@ class Messager:
         else:
             self.MsgQueue.append(f'The {nameAttack} kills the {nameDefend}!')
 
+    def addChargeMessage(self, nameAttack: str, nameDefend: str):
+        if nameAttack == 'Player':
+            self.MsgQueue.append(f'You charge the {nameDefend}')
+        elif nameDefend == 'Player':
+            self.MsgQueue.append(f'The {nameAttack} charges you!')
+        else:
+            self.MsgQueue.append(f'The {nameAttack} charges the {nameDefend}')
+
     def popMessage(self, blocking=True):
         '''
         If msg queue has a msg, it will return the msg by FIFO
@@ -152,11 +160,13 @@ class GameState(Enum):
         2: Game is over (winning/losing)
         3: Pausing will block player actions
         4: Motion will block player actions until the second event arrives
+        5: Running will update the game without user interactions
     '''
     PLAYING = 1
     END = 2
     PAUSEONMSG = 3
     MOTION = 4
+    RUNNING = 5
 
 class MenuManager:
     '''

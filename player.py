@@ -45,6 +45,8 @@ class Player(Entity):
         '''For FOV, highest level (exclusive) to see through'''
         self.Brain = Brain(self.sightRange, self.blockingLayer)
         '''Player brain for game interactions'''
+        self.Charge = Charge()
+        '''Player can run'''
 
     def input(self, energy, entityLayer, playerPos, playerZ, event):
         '''

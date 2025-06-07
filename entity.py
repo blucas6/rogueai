@@ -94,18 +94,39 @@ class Entity:
         Level Manager will call death function
         '''
         self.isActive = False
+    
+    def handleCharging(self, state, direction=None, entityLayer=[]):
+        '''Checks if an entity can charge and is charging'''
+        if hasattr(self, 'Charge'):
+            if self.Charge.charging:
+                if state == 'move':
+                    self.Charge.distance += 1
+                elif state == 'endmove' or state == 'invalid':
+                    self.Charge.end()
+                elif state == 'damage':
+                    return self.Charge.end() * -1
+            elif state == 'start':
+                self.Charge.start(int(direction))
+                self.movement(self.Charge.direction, entityLayer)
 
     def move(self, row: int, col: int, entityLayer: list):
         '''
         Moves the entity by a certain delta, checks the layers for validity
+
+        If an entity is charging, it will increment the distance
+
+        If an entity is charging and the position is invalid, it will end the
+        charge
         '''
         maxLayer = max([x.layer for x in entityLayer[row][col]])
         if self.layer > maxLayer:
             self.pos[0] = row
             self.pos[1] = col
+            self.handleCharging('move')
             # entities that are activated are added to the entity stack
             entities = self.activate(entityLayer)
             return entities
+        self.handleCharging('endmove')
 
     def validBounds(self, entityLayer, row, col):
         '''
@@ -142,12 +163,14 @@ class Entity:
     def movement(self, key, entityLayer):
         '''
         Handle the movement action
+
+        If charging and movement becomes invalid, end charge
         '''
         moves = ONE_LAYER_CIRCLE
         row = self.pos[0] + moves[key-1][0]
         col = self.pos[1] + moves[key-1][1]
-        self.Logger.log(f'{self.name} m:{(row,col)}')
         if not self.validBounds(entityLayer, row, col):
+            self.handleCharging('invalid')
             return
         # check if movement triggers an attack
         attack, entities = self.attack(entityLayer, row, col)
@@ -184,7 +207,12 @@ class Entity:
 
         Returns an entity LIST that was killed
         '''
-        damage = damage * -1
+        chargeDmg = self.handleCharging('damage')
+        if chargeDmg:
+            damage = chargeDmg
+            self.Messager.addChargeMessage(self.name, entity.name)
+        else:
+            damage = damage * -1
         if entity.Health.changeHealth(damage):
             self.Messager.addKillMessage(self.name, entity.name)
             entity.remove(entityLayer)
@@ -294,9 +322,18 @@ class Entity:
         '''
         Entrance for entity actions
         '''
-        if event.isdigit():
+        if hasattr(self, 'Charge') and self.Charge.charging:
+            # override all other events and keep charging
+            return self.movement(self.Charge.direction, entityLayer)
+        elif event[0] == '5' and len(event) > 1:
+            # start a charge
+            return self.handleCharging('start', event[1], entityLayer)
+        elif event.isdigit():
+            # movement action
             return self.movement(int(event), entityLayer)
         elif event == '<' or event == '>':
+            # stair action
             self.moveZ(event, entityLayer)
         elif event[0] == 't':
+            # throwing action
             return self.fire(entityLayer, event)

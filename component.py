@@ -12,6 +12,29 @@ def getOneLayerPts(myPos):
     '''
     return [[myPos[0]+pt[0],myPos[1]+pt[1]] for pt in ONE_LAYER_CIRCLE]
 
+class Charge:
+    '''
+    Charge component, if an entity can run and charge
+    '''
+    def __init__(self):
+        self.charging = False
+        '''If entity is currently charging'''
+        self.distance = 0
+        '''Distance covered by charge - for damage'''
+        self.frameSpeed = 0.005
+        '''How much time the engine sleeps during charge'''
+
+    def start(self, direction: int):
+        '''Start the charge, sets direction'''
+        self.charging = True
+        self.direction = direction
+    
+    def end(self):
+        '''Ends the charge, returns how much damage was dealt'''
+        dmg = self.distance
+        self.__init__()
+        return dmg
+
 class Activate:
     '''
     Activate component, if an entity does something upon a trigger
@@ -87,7 +110,6 @@ class Health:
         '''Counter for current health'''
         self.alive = True
         '''True if health bar is above 0'''
-        self.Logger = Logger()
 
     def changeHealth(self, amount):
         '''
