@@ -5,6 +5,7 @@ from player import Player
 from logger import Logger
 from animation import *
 from algo import dijkstra
+import copy
 
 class Level:
     '''
@@ -368,13 +369,17 @@ class LevelManager:
         Display animations
         '''
         if self.Animator.AnimationQueue:
+            # save off screen buffer
+            oldScreenBuffer = copy.deepcopy(self.Game.ScreenBuffer)
+            oldColorBuffer = copy.deepcopy(self.Game.ColorBuffer)
             # animations have been queued
             frameCounter = 0
             maxFrames = max([len(list(x.frames.keys()))
                              for x in self.Animator.AnimationQueue])
             for frameCounter in range(maxFrames):
-                # build the screen
-                self.Game.prepareBuffers()
+                # draw on the old buffer
+                self.Game.ScreenBuffer = copy.deepcopy(oldScreenBuffer)
+                self.Game.ColorBuffer = copy.deepcopy(oldColorBuffer)
                 for animation in self.Animator.AnimationQueue:
                     if frameCounter >= len(list(animation.frames.keys())):
                         continue
