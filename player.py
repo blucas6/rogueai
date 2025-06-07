@@ -2,6 +2,19 @@ from entity import *
 from component import *
 from colors import Colors
 from tower import *
+from enum import Enum
+import copy
+
+class FOVMemory(Enum):
+    '''
+    Types of FOV Memory:
+        0: remember nothing
+        1: remember only the object layer
+        2: remember everything
+    '''
+    NOTHING = 0,
+    OBJECTS = 1,
+    EVERYTHING = 2
 
 class Player(Entity):
     def __init__(self, rows, cols):
@@ -20,8 +33,8 @@ class Player(Entity):
         '''Entity map for output to the screen'''
         self.fovPoints = ONE_LAYER_CIRCLE
         '''Used for simple FOV'''
-        self.fovMemory = True
-        '''Decides if FOV gets cleared or stays in memory'''
+        self.fovMemory = FOVMemory.OBJECTS
+        '''Decides the type of FOV the player gets'''
         self.sightRange = 4
         '''How far the FOV will check'''
         self.unknownGlyph = ' '
@@ -43,12 +56,31 @@ class Player(Entity):
         '''Get the FOV for the player'''
         # pts = self.getSimpleFOV()
         pts = self.Brain.getFOVFromEntityLayer(entityLayer, self.pos)
-        if not self.fovMemory:
+        if self.fovMemory == FOVMemory.NOTHING:
+            # always clear previous points
             self.mentalMap = [[[] for _ in range(len(entityLayer[row]))]
                                     for row in range(len(entityLayer))]
-        for pt in pts:
-            self.mentalMap[pt[0]][pt[1]] = entityLayer[pt[0]][pt[1]]
-        
+        if self.fovMemory == FOVMemory.EVERYTHING:
+            # just add new seen points
+            for pt in pts:
+                self.mentalMap[pt[0]][pt[1]] = copy.deepcopy(
+                                                    entityLayer[pt[0]][pt[1]]
+                                                    )
+        elif self.fovMemory == FOVMemory.OBJECTS:
+            for r,row in enumerate(entityLayer):
+                for c,col in enumerate(row):
+                    if (r,c) in pts:
+                        self.mentalMap[r][c] = copy.deepcopy(entityLayer[r][c])
+                    elif self.mentalMap[r][c]:
+                        # seen before, but not in current FOV
+                        # only add the object layer
+                        self.mentalMap[r][c] = []
+                        for entity in entityLayer[r][c]:
+                            if (entity.layer == Layer.OBJECT_LAYER or
+                                entity.layer == Layer.WALL_LAYER):
+                                self.mentalMap[r][c].append(entity)
+
+        # add light layer to FOV
         for r,row in enumerate(lightLayer):
             for c,col in enumerate(row):
                 if col:
@@ -58,7 +90,6 @@ class Player(Entity):
         '''Clears the mental map'''
         self.mentalMap = [[[] for _ in range(len(entityLayer[row]))]
                                 for row in range(len(entityLayer))]
-        self.update(entityLayer)
 
     def getSimpleFOV(self):
         '''Use a one layer circle to get which points are visible'''

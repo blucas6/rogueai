@@ -265,7 +265,8 @@ MULT = [
 def RecursiveShadow(grid: list, pos: list, radius: int, blockingLayer: int=1,
                     debug=False):
     '''
-    Returns a list of points that are viewable from the current position
+    Returns a list of tuples that are viewable from the current position
+
     All points are viewable, including the blockingLayer value
     '''
     pts = set()
