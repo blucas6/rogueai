@@ -338,31 +338,40 @@ class LevelManager:
         while entityStack:
             addEntities = []
             entity = entityStack.pop()
-            if not self.removeIfDead(entity, level):
+            fromInput = []  # add to stack, came from input
+            fromUpdate = [] # add to stack, came from update
+            fromDeath = []  # add to stack, came from death
+            isDead, fromDeath = self.removeIfDead(entity, level)
+            if not isDead:
                 # entity is alive
                 if entity.turn < turn:
                     # entity has not yet taken a turn
                     entity.turn = turn
-                    entities = entity.input(energy,
+                    fromInput = entity.input(energy,
                                             level.EntityLayer,
                                             self.Player.pos,
                                             self.Player.z,
                                             playerEvent)
-                    if entities:
-                        addEntities.extend(entities)
                 # always call entity update
-                entities = entity.update(level.EntityLayer,
+                fromUpdate = entity.update(level.EntityLayer,
                                          self.Player.pos,
                                          level.LightLayer)
-                if entities:
-                    addEntities.extend(entities)
-                if addEntities:
-                    for e in addEntities:
-                        if e:
-                            self.Logger.log(f'Adding -> {e.name} {e.pos}')
-                            entityStack.append(e)
                 # move entity to correct position
                 self.fixEntityPosition(entity, level)
+            
+            # add other entities affected to the stack
+            if fromInput:
+                addEntities.extend(fromInput)
+            if fromUpdate:
+                addEntities.extend(fromUpdate)
+            if fromDeath:
+                addEntities.extend(fromDeath)
+            if addEntities:
+                for e in addEntities:
+                    if e:
+                        self.Logger.log(f'Adding -> {e.name} {e.pos}')
+                        entityStack.append(e)
+
             # play animations (could be queued from death)
             self.animations()
 
@@ -414,23 +423,24 @@ class LevelManager:
         remove it
         '''
         if not entity.isActive:
+            entities = []   # death may trigger other kills
             r = entity.EntityLayerPos[0]
             c = entity.EntityLayerPos[1]
             idx = entity.EntityLayerPos[2]
             if idx >= len(level.EntityLayer[r][c]):
                 # not enough entity on the square for this entity to still be
                 # here, must have already been removed
-                return True
+                return True, []
             try:
                 if level.EntityLayer[r][c][idx].id == entity.id:
                     del level.EntityLayer[r][c][idx]
                     # call entity death ONLY if it is the same entity
-                    entity.death(level.EntityLayer)
+                    entities = entity.death(level.EntityLayer)
                     self.Logger.log(f'REMOVING: {entity.name} {r},{c},{idx}')
             except Exception as e:
                 self.Logger.log(f'Error: failed to remove {entity.name}:{r},{c},{idx}')
-            return True
-        return False
+            return True, entities
+        return False, []
     
     def fixEntityPosition(self, entity: Entity, level: Level):
         '''

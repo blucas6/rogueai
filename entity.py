@@ -104,7 +104,7 @@ class Entity:
                 elif state == 'endmove' or state == 'invalid':
                     self.Charge.end()
                 elif state == 'damage':
-                    return self.Charge.end() * -1
+                    return self.Charge.end()
             elif state == 'start':
                 self.Charge.start(int(direction))
                 self.movement(self.Charge.direction, entityLayer)
@@ -189,44 +189,43 @@ class Entity:
         Returns True if there was an attack, and the entity that was killed
         '''
         for entity in entityLayer[row][col]:
-            if self.attackable(entity):
-                killed = self.dealDamage(entityLayer,
+            if hasattr(self, 'Attack') and self.attackable(entity):
+                chargeDmg = self.handleCharging('damage')
+                if chargeDmg:
+                    damage = chargeDmg
+                    self.Messager.addChargeMessage(self.name, entity.name)
+                else:
+                    damage = self.Attack.damage
+                kill = self.dealDamage(entityLayer,
                                          entity,
-                                         self.Attack.damage)
-                if killed:
-                    return True, killed
+                                         damage)
                 # exit if an attack was triggered
+                if kill:
+                    return True, [kill]
                 return True, None
         return False, None
 
-    def dealDamage(self, entityLayer, entity, damage):
+    def dealDamage(self, entityLayer, entity, damage, nomsg=False):
         '''
         Deal damage to another entity and possibly kill it
 
         Damage will be inversed
 
-        Returns an entity LIST that was killed
+        Returns the entity if it was killed
         '''
-        chargeDmg = self.handleCharging('damage')
-        if chargeDmg:
-            damage = chargeDmg
-            self.Messager.addChargeMessage(self.name, entity.name)
-        else:
-            damage = damage * -1
+        damage = damage * -1
+        self.Logger.log(f'{self.name} dealing {damage} to {entity.name}')
         if entity.Health.changeHealth(damage):
             self.Messager.addKillMessage(self.name, entity.name)
             entity.remove(entityLayer)
-            return [entity]
-        else:
+            return entity
+        elif not nomsg:
             self.Messager.addDamageMessage(self.name, entity.name)
     
     def attackable(self, entity):
         '''Checks if an entity can be attacked'''
         if (entity is not self and 
-            hasattr(entity, 'Health') and
-            hasattr(self, 'Attack') and 
-            hasattr(entity, 'Attack') and
-            entity.Attack.alignment != self.Attack.alignment):
+            hasattr(entity, 'Health')):
             return True
         return False
     
@@ -298,8 +297,10 @@ class Entity:
         dmg = entity.size * 2
         r,c = entity.pos[0], entity.pos[1]
         for e in entityLayer[r][c]:
-            if hasattr(e, 'Health'):
-                entities = self.dealDamage(entityLayer, e, dmg)
+            if self.attackable(e):
+                kill = self.dealDamage(entityLayer, e, dmg)
+                if kill:
+                    entities.append(kill)
 
         # create the animation
         frames = {}

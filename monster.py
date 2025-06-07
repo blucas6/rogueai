@@ -42,6 +42,7 @@ class Jelly(Entity):
         animator = Animator()
         animator.queueUp(animation)
         # spread damage
+        entities = []
         points = getOneLayerPts(self.pos)
         for point in points:
             row = point[0]
@@ -50,9 +51,13 @@ class Jelly(Entity):
                 continue
             if self.validBounds(entityLayer, row, col):
                 for entity in entityLayer[row][col]:
-                    if hasattr(entity, 'Health'):
-                        if entity.Health.changeHealth(-1*self.Attack.damage):
-                            entity.remove(entityLayer)
+                    if self.attackable(entity):
+                        damage = self.Attack.damage
+                        kill = self.dealDamage(entityLayer,
+                                               entity, damage, nomsg=True)
+                        if kill:
+                            entities.append(kill)
+        return entities
 
 class Newt(Entity):
     '''
