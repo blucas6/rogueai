@@ -1,5 +1,5 @@
 from entity import *
-from colors import Colors
+from color import Colors
 from component import *
 
 class Wall(Entity):

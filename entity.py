@@ -1,4 +1,4 @@
-from colors import Colors
+from color import Colors
 from logger import Logger
 from menu import Messager
 import itertools

@@ -1,9 +1,9 @@
 from entity import *
 from component import *
-from colors import Colors
+from color import Colors
 from tower import *
 from enum import Enum
-from items import *
+from item import *
 import copy
 
 class FOVMemory(Enum):

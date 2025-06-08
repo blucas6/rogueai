@@ -1,4 +1,4 @@
-from colors import Colors
+from color import Colors
 import time
 
 class Animation:

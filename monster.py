@@ -1,8 +1,8 @@
 from entity import *
-from colors import Colors
+from color import Colors
 from animation import Animator, Animation
 from component import *
-from items import *
+from item import *
 
 class Jelly(Entity):
     '''

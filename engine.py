@@ -1,7 +1,7 @@
 import curses
 import traceback
 import time
-from colors import Colors
+from color import Colors
 
 class Engine:
     '''

@@ -3,7 +3,7 @@ import random
 from curses import ascii
 from engine import Engine
 from level import LevelManager
-from colors import Colors
+from color import Colors
 from logger import Logger, Timing
 from menu import MenuManager, GameState, Messager
 import secrets
