@@ -49,7 +49,15 @@ class Player(Entity):
 
     def setup(self):
         super().setup()
-        self.Inventory.equip(Sword())
+        # self.Inventory.equip(Sword())
+        self.Inventory.contents.append(Sword())
+    
+    def handleInventoryAction(self, event, key):
+        self.Inventory.show()
+        if event == 'e':
+            entity = self.Inventory.getEntityFromKey(key)
+            if entity:
+                self.Inventory.equip(entity)
 
     def input(self, energy, entityLayer, playerPos, playerZ, event):
         '''

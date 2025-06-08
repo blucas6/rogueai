@@ -2,6 +2,7 @@ from logger import Logger
 import math
 from enum import Enum
 from algo import RecursiveShadow
+from message import Messager
 import copy
 
 ONE_LAYER_CIRCLE = [(1,-1),(1,0),(1,1),(0,-1),(0,0),(0,1),(-1,-1),(-1,0),(-1,1)]
@@ -142,21 +143,66 @@ class Inventory:
     Inventory component
     '''
     def __init__(self):
+        self.quiver = None
         self.mainHand = None
         self.offHand = None
-        self.quiver = []
         self.head = None
         self.body = None
         self.feet = None
         self.contents = []
+        self.maxContents = 10
+
+    def show(self):
+        self.Logger = Logger()
+        self.Logger.log('Inventory')
+        self.Logger.log(f' Quiver: {self.quiver}')
+        self.Logger.log(f' Main Hand: {self.mainHand}')
+        self.Logger.log(f' Off Hand: {self.offHand}')
+        self.Logger.log(f' Head: {self.head}')
+        self.Logger.log(f' Body: {self.body}')
+        self.Logger.log(f' Feet: {self.feet}')
+        self.Logger.log(f' Bag:')
+        for e in self.contents:
+            self.Logger.log(f'  {e.name}')
+    
+    def getEntityFromKey(self, char):
+        try:
+            key = ord(char) - 97
+            Logger().log(f'inventory {char} {key}')
+            if key == 0:
+                entity = copy.deepcopy(self.quiver)
+                self.quiver = None
+                return entity
+            elif key == 1:
+                entity = copy.deepcopy(self.mainHand)
+                self.mainHand = None
+                return entity
+            elif key == 2:
+                entity = copy.deepcopy(self.offHand)
+                self.offHand = None
+                return entity
+            elif key == 3:
+                return self.head
+            elif key == 4:
+                return self.body
+            elif key == 5:
+                return self.feet
+            elif key-6 < len(self.contents):
+                entity = copy.deepcopy(self.contents[key-6])
+                del self.contents[key-6]
+                return entity
+            else:
+                raise
+        except Exception as e:
+            Messager().addMessage('Invalid inventory key!')
+            return
 
     def equip(self, entity):
         if hasattr(self, 'Quiver'):
             if self.quiver:
                 if self.quiver[0].name != entity.name:
-                    for e in self.quiver:
-                        self.contents.append(copy.deepcopy(e))
-                self.quiver.append(copy.deepcopy(entity))
+                    self.contents.append(copy.deepcopy(self.quiver))
+                self.quiver = copy.deepcopy(entity)
         elif hasattr(self, 'Wear'):
             if entity.Wear == Wear.HEAD:
                 if self.head:

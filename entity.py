@@ -1,6 +1,6 @@
 from color import Colors
 from logger import Logger
-from menu import Messager
+from message import Messager
 import itertools
 from component import *
 from enum import IntEnum

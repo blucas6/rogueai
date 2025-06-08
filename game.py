@@ -5,7 +5,8 @@ from engine import Engine
 from level import LevelManager
 from color import Colors
 from logger import Logger, Timing
-from menu import MenuManager, GameState, Messager
+from menu import MenuManager, GameState
+from message import Messager
 import secrets
 
 class Game:
@@ -168,6 +169,9 @@ class Game:
         '''Clears the current message'''
         self.Logger.log('clearing the state')
         self.MenuManager.MessageMenu.clear()
+        self.MenuManager.InventoryMenu.update(
+            self.LevelManager.Player.Inventory
+        )
 
     def loop(self, event, energy):
         '''
@@ -330,10 +334,11 @@ class Game:
         if not event:
             return -1,event
         if self.GameState == GameState.MOTION:
+            self.stateMachine('donemotion')
             # MOTION EVENTS
             if self.previousEvent == 't' or self.previousEvent == '5':
-                # throwing expects a direction
-                self.stateMachine('donemotion')
+                # Throwing/Charge Action
+                # expects a direction
                 if not event.isdigit() or event == '5':
                     self.Messager.addMessage('Invalid direction!')
                     return 0,event
@@ -342,6 +347,12 @@ class Game:
                 if self.previousEvent == '5':
                     self.stateMachine('startrun')
                 return 1,self.previousEvent+event
+            elif self.previousEvent == 'e':
+                # Inventory Action
+                self.LevelManager.Player.handleInventoryAction(
+                    self.previousEvent,
+                    event)
+                return 0,event
         if event == chr(ascii.ESC) or event == 'q':
             # QUIT
             self.running = False
@@ -365,6 +376,9 @@ class Game:
         elif event == 'e' and self.GameState == GameState.PLAYING:
             # Multi key action
             self.Messager.addMessage('Equip what?')
+            self.stateMachine('motion')
+            self.previousEvent = event
+            return 0,event
         elif self.GameState == GameState.PLAYING:
             # PLAYER ACTION
             self.Logger.log(f'player action: {event}')

@@ -1,68 +1,7 @@
 from enum import Enum
 from logger import Logger
 from component import Inventory
-
-class Messager:
-    '''
-    Singleton class to write game action messages to
-    '''
-    _instance = None
-
-    def __new__(obj):
-        if not obj._instance:
-            obj._instance = super(Messager, obj).__new__(obj)
-            obj._instance.clear()
-        return obj._instance
-    
-    def clear(self):
-        '''
-        Clears the msg queue
-        '''
-        self.MsgQueue = []
-
-    def addMessage(self, msg: str):
-        '''
-        Adds a msg to the msg queue
-        '''
-        self.MsgQueue.append(msg)
-    
-    def addDamageMessage(self, nameAttack: str, nameDefend: str):
-        if nameAttack == 'Player':
-            self.MsgQueue.append(f'You hit the {nameDefend}')
-        elif nameDefend == 'Player':
-            self.MsgQueue.append(f'The {nameAttack} hits you')
-        else:
-            self.MsgQueue.append(f'The {nameAttack} hits the {nameDefend}')
-    
-    def addKillMessage(self, nameAttack: str, nameDefend: str):
-        if nameAttack == 'Player':
-            self.MsgQueue.append(f'You kill the {nameDefend}!')
-        elif nameDefend == 'Player':
-            self.MsgQueue.append(f'The {nameAttack} kills you!')
-        else:
-            self.MsgQueue.append(f'The {nameAttack} kills the {nameDefend}!')
-
-    def addChargeMessage(self, nameAttack: str, nameDefend: str):
-        if nameAttack == 'Player':
-            self.MsgQueue.append(f'You charge the {nameDefend}')
-        elif nameDefend == 'Player':
-            self.MsgQueue.append(f'The {nameAttack} charges you!')
-        else:
-            self.MsgQueue.append(f'The {nameAttack} charges the {nameDefend}')
-
-    def popMessage(self, blocking=True):
-        '''
-        If msg queue has a msg, it will return the msg by FIFO
-        '''
-        if self.MsgQueue:
-            if blocking:
-                msg = self.MsgQueue[0]
-                del self.MsgQueue[0]
-            else:
-                msg = self.MsgQueue[0]
-                self.MsgQueue = []
-            return msg
-        return ''
+from message import Messager
 
 class Menu:
     '''
@@ -162,9 +101,12 @@ class HealthMenu(Menu):
 
 class InventoryMenu(Menu):
     def __init__(self, origin: tuple, length: tuple):
+        self.quiverName = ''
         self.mainHandName = ''
         self.offHandName = ''
-        self.quiverName = ''
+        self.headName = ''
+        self.bodyName = ''
+        self.feetName = ''
         self.contentsName = ''
         self.count = 96
         super().__init__(origin, length)
@@ -172,22 +114,33 @@ class InventoryMenu(Menu):
     def update(self, inventory: Inventory=None):
         super().update()
         if inventory:
+            self.quiverName = f'({self.letter()}) Quiver:\n  '
             if inventory.quiver:
-                self.quiver = f'({self.letter()}): {inventory.quiver.name}'
+                self.quiverName += inventory.quiver.name
+            self.mainHandName = f'({self.letter()}) Main Hand:\n  '
             if inventory.mainHand:
-                self.mainHandName = f'({self.letter()}): {inventory.mainHand.name}'
+                self.mainHandName += inventory.mainHand.name
+            self.offHandName = f'({self.letter()}) Off Hand:\n  '
             if inventory.offHand:
-                self.offHandName = f'({self.letter()}): {inventory.offHand.name}'
+                self.offHandName += inventory.offHand.name
+            self.headName = f'({self.letter()}) Head:\n  '
+            if inventory.head:
+                self.headName += inventory.head.name
+            self.bodyName = f'({self.letter()}) Body:\n  '
+            if inventory.body:
+                self.bodyName += inventory.body.name
+            self.feetName = f'({self.letter()}) Feet:\n  '
+            if inventory.feet:
+                self.feetName += inventory.feet.name
+            self.contentsName = ''
             if inventory.contents:
+                self.Logger.log(f'MY menu inventory {inventory.contents}')
                 for entity in inventory.contents:
-                    self.contentsName += f'  ({self.letter()}): {entity.name}\n'
+                    self.contentsName += f' ({self.letter()}): {entity.name}\n'
         self.text = f'=Inventory=\n' \
-                    f'Quiver:\n' \
-                    f'   {self.quiverName}\n' \
-                    f'Main Hand: \n' \
-                    f'   {self.mainHandName}\n' \
-                    f' Off Hand: \n' \
-                    f'   {self.offHandName}\n' \
+                    f'{self.quiverName}\n' \
+                    f'{self.mainHandName}\n' \
+                    f'{self.offHandName}\n' \
                     f'\n' \
                     f'Bag:\n'
         self.text += self.contentsName
