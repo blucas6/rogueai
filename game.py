@@ -95,7 +95,7 @@ class Game:
         self.MenuManager = MenuManager()
         self.Messager = Messager()
         startPos = [1,1]
-        self.LevelManager.defaultLevelSetup(startPos)
+        self.LevelManager.defaultLevelSetupWalls(startPos)
         self.LevelManager.addPlayer(pos=startPos, z=0)
         self.LevelManager.Player.update(
             self.LevelManager.getCurrentLevel().EntityLayer

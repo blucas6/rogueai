@@ -121,7 +121,9 @@ class Engine:
 
     def pause(self, t=1):
         '''
-        Sleeps the engine and discards any key presses
+        Sleeps the engine for t amount of seconds
+        
+        Discards any key presses during that time
         '''
         time.sleep(t)
         while self.stdscr.getch() != -1:
