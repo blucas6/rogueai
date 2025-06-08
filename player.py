@@ -3,6 +3,7 @@ from component import *
 from colors import Colors
 from tower import *
 from enum import Enum
+from items import *
 import copy
 
 class FOVMemory(Enum):
@@ -18,17 +19,8 @@ class FOVMemory(Enum):
 
 class Player(Entity):
     def __init__(self, rows, cols):
-        super().__init__(name='Player',
-                         glyph='@',
-                         color=Colors().white,
-                         layer=Layer.MONST_LAYER,
-                         size=Size.LARGE)
         self.Health = Health(health=6)
         '''Health component'''
-        self.Attack = Attack(name='Punch',
-                             damage=1,
-                             alignment=Alignment.LAWFUL)
-        '''Attack component'''
         self.mentalMap = [[[] for _ in range(cols)] for _ in range(rows)]
         '''Entity map for output to the screen'''
         self.fovPoints = ONE_LAYER_CIRCLE
@@ -47,6 +39,17 @@ class Player(Entity):
         '''Player brain for game interactions'''
         self.Charge = Charge()
         '''Player can run'''
+        self.Inventory = Inventory()
+        ''''''
+        super().__init__(name='Player',
+                         glyph='@',
+                         color=Colors().white,
+                         layer=Layer.MONST_LAYER,
+                         size=Size.LARGE)
+
+    def setup(self):
+        super().setup()
+        self.Inventory.equip(Sword())
 
     def input(self, energy, entityLayer, playerPos, playerZ, event):
         '''

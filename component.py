@@ -2,6 +2,7 @@ from logger import Logger
 import math
 from enum import Enum
 from algo import RecursiveShadow
+import copy
 
 ONE_LAYER_CIRCLE = [(1,-1),(1,0),(1,1),(0,-1),(0,0),(0,1),(-1,-1),(-1,0),(-1,1)]
 
@@ -128,17 +129,74 @@ class Alignment(Enum):
     Attack components have an alignment, so that creatures of the same
     alignment cannot damage each other
     '''
-    LAWFUL = 0,
+    LAWFUL = 0
     CHAOTIC = 1
+
+class Wear(Enum):
+    HEAD = 0
+    BODY = 1
+    FEET = 2
+
+class Inventory:
+    '''
+    Inventory component
+    '''
+    def __init__(self):
+        self.mainHand = None
+        self.offHand = None
+        self.quiver = []
+        self.head = None
+        self.body = None
+        self.feet = None
+        self.contents = []
+
+    def equip(self, entity):
+        if hasattr(self, 'Quiver'):
+            if self.quiver:
+                if self.quiver[0].name != entity.name:
+                    for e in self.quiver:
+                        self.contents.append(copy.deepcopy(e))
+                self.quiver.append(copy.deepcopy(entity))
+        elif hasattr(self, 'Wear'):
+            if entity.Wear == Wear.HEAD:
+                if self.head:
+                    self.contents.append(copy.deepcopy(self.head))
+                self.head = copy.deepcopy(entity)
+            elif entity.Wear == Wear.BODY:
+                if self.body:
+                    self.contents.append(copy.deepcopy(self.body))
+                self.body = copy.deepcopy(entity)
+            elif entity.Wear == Wear.FEET:
+                if self.feet:
+                    self.contents.append(copy.deepcopy(self.feet))
+                self.feet = copy.deepcopy(entity)
+        else:
+            if self.offHand:
+                self.contents.append(copy.deepcopy(self.offHand))
+            if self.mainHand:
+                self.offHand = copy.deepcopy(self.mainHand)
+            self.mainHand = copy.deepcopy(entity)
+
+    def dealDamage(self):
+        damage = 0
+        if self.mainHand and hasattr(self.mainHand, 'Attack'):
+            damage += self.mainHand.Attack.damage
+        if self.offHand and hasattr(self.offHand, 'Attack'):
+            damage += self.offHand.Attack.damage
+        return damage
+    
+    def pickUp(self):
+        pass
+
+    def drop(self):
+        pass
 
 class Attack:
     '''
-    Attack component, if an entity can deal damage
+    Attack component, if an entity can be used as an attack
     '''
-    def __init__(self, name, damage, alignment: Alignment):
+    def __init__(self, name, damage):
         self.name = name
         '''name of the attack'''
         self.damage = damage
         '''amount of damage the attack does'''
-        self.alignment = alignment
-        '''prevents attacking the same alignment'''

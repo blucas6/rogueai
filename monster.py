@@ -2,6 +2,7 @@ from entity import *
 from colors import Colors
 from animation import Animator, Animation
 from component import *
+from items import *
 
 class Jelly(Entity):
     '''
@@ -14,9 +15,7 @@ class Jelly(Entity):
                          layer=Layer.MONST_LAYER,
                          size=Size.MEDIUM)
         self.Health = Health(health=3)
-        self.Attack = Attack(name='Splash',
-                             damage=5,
-                             alignment=Alignment.CHAOTIC)
+        self.splashDamage = 5
 
     def death(self, entityLayer):
         '''
@@ -52,7 +51,7 @@ class Jelly(Entity):
             if self.validBounds(entityLayer, row, col):
                 for entity in entityLayer[row][col]:
                     if self.attackable(entity):
-                        damage = self.Attack.damage
+                        damage = self.splashDamage
                         kill = self.dealDamage(entityLayer,
                                                entity, damage, nomsg=True)
                         if kill:
@@ -64,16 +63,18 @@ class Newt(Entity):
     Newt Entity
     '''
     def __init__(self):
+        self.Health = Health(health=3)
+        self.Brain = Brain(sightRange=5, blockingLayer=Layer.MONST_LAYER)
+        self.Inventory = Inventory()
         super().__init__(name='Newt',
                          glyph='n',
                          color=Colors().yellow,
                          layer=Layer.MONST_LAYER,
                          size=Size.MEDIUM)
-        self.Health = Health(health=3)
-        self.Attack = Attack(name='Bite',
-                             damage=1,
-                             alignment=Alignment.CHAOTIC)
-        self.Brain = Brain(sightRange=5, blockingLayer=Layer.MONST_LAYER)
+    
+    def setup(self):
+        super().setup()
+        self.Inventory.equip(Bite())
 
     def input(self, energy, entityLayer, playerPos, playerZ, *args):
         '''

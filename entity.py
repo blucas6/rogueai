@@ -71,6 +71,10 @@ class Entity:
         '''Keeps track of game turns'''
         self.size = size
         '''Size enum for the entity'''
+        self.setup()
+
+    def setup(self):
+        '''Default setup - always called on entity initialization'''
         self.Logger = Logger()
 
     def setPosition(self, pos: list, zlevel: int, idx: int):
@@ -189,13 +193,13 @@ class Entity:
         Returns True if there was an attack, and the entity that was killed
         '''
         for entity in entityLayer[row][col]:
-            if hasattr(self, 'Attack') and self.attackable(entity):
+            if hasattr(self, 'Inventory') and self.attackable(entity):
                 chargeDmg = self.handleCharging('damage')
                 if chargeDmg:
                     damage = chargeDmg
                     self.Messager.addChargeMessage(self.name, entity.name)
                 else:
-                    damage = self.Attack.damage
+                    damage = self.Inventory.dealDamage()
                 kill = self.dealDamage(entityLayer,
                                          entity,
                                          damage)
