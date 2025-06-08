@@ -362,6 +362,9 @@ class Game:
             self.stateMachine('motion')
             self.previousEvent = event
             return 0,event
+        elif event == 'e' and self.GameState == GameState.PLAYING:
+            # Multi key action
+            self.Messager.addMessage('Equip what?')
         elif self.GameState == GameState.PLAYING:
             # PLAYER ACTION
             self.Logger.log(f'player action: {event}')

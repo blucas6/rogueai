@@ -162,20 +162,41 @@ class HealthMenu(Menu):
 
 class InventoryMenu(Menu):
     def __init__(self, origin: tuple, length: tuple):
-        self.mainHandname = ''
-        self.offHandname = ''
+        self.mainHandName = ''
+        self.offHandName = ''
+        self.quiverName = ''
+        self.contentsName = ''
+        self.count = 96
         super().__init__(origin, length)
     
     def update(self, inventory: Inventory=None):
         super().update()
         if inventory:
+            if inventory.quiver:
+                self.quiver = f'({self.letter()}): {inventory.quiver.name}'
             if inventory.mainHand:
-                self.mainHandname = inventory.mainHand.name
+                self.mainHandName = f'({self.letter()}): {inventory.mainHand.name}'
             if inventory.offHand:
-                self.offHandname = inventory.offHand.name
-        self.text = f'Inventory\n' \
-                    f'Main Hand: {self.mainHandname}\n' \
-                    f' Off Hand: {self.offHandname}'
+                self.offHandName = f'({self.letter()}): {inventory.offHand.name}'
+            if inventory.contents:
+                for entity in inventory.contents:
+                    self.contentsName += f'  ({self.letter()}): {entity.name}\n'
+        self.text = f'=Inventory=\n' \
+                    f'Quiver:\n' \
+                    f'   {self.quiverName}\n' \
+                    f'Main Hand: \n' \
+                    f'   {self.mainHandName}\n' \
+                    f' Off Hand: \n' \
+                    f'   {self.offHandName}\n' \
+                    f'\n' \
+                    f'Bag:\n'
+        self.text += self.contentsName
+
+        self.count = 96
+
+    def letter(self):
+        self.count += 1
+        return chr(self.count)
 
 class GameState(Enum):
     '''
