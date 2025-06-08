@@ -46,14 +46,13 @@ class Game:
         '''Set when recreating a seed'''
         self.previousEvent = ''
         '''Used for key motions of multiple characters'''
-        self.allowTiming = timing
-        '''Timing turns off logging and takes timing measurements'''
         self.Timing = Timing()
-        '''Timing object to hold all measurements'''
+        '''Timing for measurements'''
         self.Logger = Logger()
         # turn off logging for timing measurements
         self.Logger.debugOn = not timing
-    
+        self.Timing.allowTiming = timing
+
     def displaySetup(self, stdscr: curses.window, timeDelay: int=None):
         '''
         Sets up the display for outputting to the screen
@@ -76,8 +75,7 @@ class Game:
         '''
         Sets up the game from a fresh start
         '''
-        if self.allowTiming:
-            self.Timing.start('Game Setup')
+        self.Timing.start('Game Setup')
         # start running
         self.running = True
         # set up objects
@@ -102,8 +100,7 @@ class Game:
         self.LevelManager.Player.update(
             self.LevelManager.getCurrentLevel().EntityLayer
         )
-        if self.allowTiming:
-            self.Timing.end()
+        self.Timing.end()
         # update the game one time (generates FOV)
         self.loop(event=' ', energy=0)
 
@@ -120,8 +117,7 @@ class Game:
         self.main()
     
     def end(self):
-        if self.allowTiming:
-            self.Timing.show()
+        self.Timing.show()
 
     def main(self):
         '''
@@ -178,13 +174,8 @@ class Game:
         Execute one loop in the game loop
         '''
 
-        # timing
-        if self.allowTiming:
-            self.Timing.start('Game Loop')
-
         # event was valid, save it
         self.previousEvent = event
-
 
         # update the turn
         self.MenuManager.TurnMenu.update()
@@ -233,10 +224,6 @@ class Game:
         # check to end the charge
         if not self.LevelManager.Player.Charge.charging:
             self.stateMachine('endrun')
-
-        # timing
-        if self.allowTiming:
-            self.Timing.end()
 
     def render(self):
         '''

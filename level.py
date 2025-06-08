@@ -2,7 +2,7 @@ from entity import *
 from monster import *
 from tower import *
 from player import Player
-from logger import Logger
+from logger import Logger, Timing
 from animation import *
 from algo import dijkstra
 import copy
@@ -257,6 +257,8 @@ class LevelManager:
         '''Player object'''
         self.Animator = Animator()
         '''Animation manager'''
+        self.Timing = Timing()
+        '''Timing recorder'''
         self.Logger = Logger()
         for l in range(self.TotalLevels):
             self.Levels.append(Level(self.height, self.width, l, rng))
@@ -323,7 +325,8 @@ class LevelManager:
 
         Play the animations generated from an entity turn
         '''
-        self.Logger.log(f'Taking a turn {playerEvent}')
+        # timing
+        self.Timing.start('Game Loop')
 
         level = self.Levels[self.CurrentZ]
 
@@ -373,7 +376,10 @@ class LevelManager:
                         entityStack.append(e)
 
             # play animations (could be queued from death)
+            self.Timing.pause()
             self.animations()
+            self.Timing.resume()
+        self.Timing.end()
 
     def animations(self):
         '''
