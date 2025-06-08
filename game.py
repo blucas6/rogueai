@@ -211,6 +211,11 @@ class Game:
             self.LevelManager.Player.Health.currentHealth,
             self.LevelManager.Player.Health.maxHealth)
 
+        # update inventory menu
+        self.MenuManager.InventoryMenu.update(
+            self.LevelManager.Player.Inventory
+        )
+
         # check for death
         if not self.GameState == GameState.END and self.lose():
             self.Messager.addMessage('You died!')

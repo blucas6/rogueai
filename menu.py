@@ -1,5 +1,6 @@
 from enum import Enum
 from logger import Logger
+from component import Inventory
 
 class Messager:
     '''
@@ -93,8 +94,14 @@ class Menu:
         Adds the current text to the screen buffer
         '''
         if self.textSave != self.text:
-            for c,ch in enumerate(self.text):
-                rw = self.origin[0]
+            r = 0
+            c = 0
+            for ch in self.text:
+                c += 1
+                if ch == '\n':
+                    r += 1
+                    c = 0
+                rw = r+self.origin[0]
                 cl = c+self.origin[1]
                 screenBuffer[rw][cl] = ch
             self.textSave = self.text
@@ -153,6 +160,23 @@ class HealthMenu(Menu):
         amount = round((self.HealthBarLength * health / maxhealth))
         self.text = '['+amount*'\u2588'+(self.HealthBarLength-amount)*' '+']'
 
+class InventoryMenu(Menu):
+    def __init__(self, origin: tuple, length: tuple):
+        self.mainHandname = ''
+        self.offHandname = ''
+        super().__init__(origin, length)
+    
+    def update(self, inventory: Inventory=None):
+        super().update()
+        if inventory:
+            if inventory.mainHand:
+                self.mainHandname = inventory.mainHand.name
+            if inventory.offHand:
+                self.offHandname = inventory.offHand.name
+        self.text = f'Inventory\n' \
+                    f'Main Hand: {self.mainHandname}\n' \
+                    f' Off Hand: {self.offHandname}'
+
 class GameState(Enum):
     '''
     Game States:
@@ -178,6 +202,7 @@ class MenuManager:
         self.DepthMenu = DepthMenu((20,10), 20)
         self.MessageMenu = MessageMenu((0,0), 50)
         self.HealthMenu = HealthMenu((21,0), 20)
+        self.InventoryMenu = InventoryMenu((1,50), 100)
 
     def display(self, screenBuffer):
         '''Displays all menus to screen buffer'''
@@ -185,3 +210,4 @@ class MenuManager:
         self.DepthMenu.display(screenBuffer)
         self.MessageMenu.display(screenBuffer)
         self.HealthMenu.display(screenBuffer)
+        self.InventoryMenu.display(screenBuffer)
