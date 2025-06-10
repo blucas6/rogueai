@@ -9,142 +9,132 @@ class Menu:
     Update the text attribute to have it display to the screen at the origin
     Needs a max length in order to clear the menu
     '''
-    def __init__(self, origin: tuple, length: int):
+    def __init__(self, screenBuffer: list, origin: tuple,
+                 rows: int, cols: int):
         self.origin = origin
-        '''top left corner in screen buffer'''
-        self.text = ''
-        '''text string to be displayed'''
-        self.length = length
-        '''max length for the text string'''
-        self.textSave = ''
-        '''previously used text message'''
+        '''Top left corner in screen buffer'''
+        self.rows = rows
+        '''Max rows for the menu'''
+        self.cols = cols
+        '''Max cols for the menu'''
+        self.text = [' '*self.cols for _ in range(self.rows)]
+        '''Text array to be displayed'''
         self.Logger = Logger()
+        if (self.origin[0] + self.rows > len(screenBuffer) or
+            self.origin[1] + self.cols > len(screenBuffer[0])):
+            self.Logger.log(f'Error: {self.__class__.__name__} too big for screen')
         self.update()
-
-    def update(self, *args, **kwargs):
-        '''
-        Child classes should always call base update to fully clear out previous
-        text messages
-        '''
-        self.text += ' '*(self.length-len(self.text))
+    
+    def update(self, *args):
+        self.text = [' '*self.cols for _ in range(self.rows)]
     
     def display(self, screenBuffer):
         '''
         Adds the current text to the screen buffer
         '''
-        if self.textSave != self.text:
-            r = 0
-            c = 0
-            for ch in self.text:
-                c += 1
-                if ch == '\n':
-                    r += 1
-                    c = 0
+        for r in range(self.rows):
+            for c in range(self.cols):
                 rw = r+self.origin[0]
                 cl = c+self.origin[1]
-                screenBuffer[rw][cl] = ch
-            self.textSave = self.text
+                if rw < len(screenBuffer) and cl < len(screenBuffer[rw]):
+                    screenBuffer[rw][cl] = ' '
+        for r,row in enumerate(self.text):
+            for c,ch in enumerate(row):
+                rw = r+self.origin[0]
+                cl = c+self.origin[1]
+                if rw < len(screenBuffer) and cl < len(screenBuffer[rw]):
+                    screenBuffer[rw][cl] = ch
 
 class TurnMenu(Menu):
     '''Displays the turn information'''
-    def __init__(self, origin: tuple, length: int):
+    def __init__(self, screenBuffer: list, origin: tuple):
         self.count = -1
-        '''turn count'''
-        super().__init__(origin, length)
+        '''Turn count'''
+        super().__init__(screenBuffer, origin, rows=1, cols=10)
 
     def update(self):
-        '''updates the turn count'''
-        self.count += 1
-        self.text = f'Turn: {self.count}'
+        '''Updates the turn count'''
         super().update()
+        self.count += 1
+        self.text[0] = f'Turn: {self.count}'
 
 class DepthMenu(Menu):
     '''Displays the level depth information'''
-    def __init__(self, origin: tuple, length: int):
-        super().__init__(origin, length)
+    def __init__(self, screenBuffer: list, origin: tuple):
+        super().__init__(screenBuffer, origin, rows=1, cols=20)
     
     def update(self, z=0):
-        '''updates the level index'''
-        self.text = f'Current Level: {z+1}'
+        '''Updates the level index'''
         super().update()
+        self.text[0] = f'Current Level: {z+1}'
 
 class MessageMenu(Menu):
     '''Reads the messager object for messages'''
-    def __init__(self, origin: tuple, length: int):
+    def __init__(self, screenBuffer: list, origin: tuple):
         self.Messager = Messager()
-        '''connection to msg queue'''
-        super().__init__(origin, length)
+        self.msg = ''
+        '''Connection to msg queue'''
+        super().__init__(screenBuffer, origin, rows=1, cols=50)
 
     def update(self, blocking=True):
         '''if no msg is being displayed, grab the next msg'''
-        if not self.text:
-            self.text = self.Messager.popMessage(blocking)
-            if self.Messager.MsgQueue:
-                self.text += " --more--"
         super().update()
+        if not self.msg:
+            self.msg = self.Messager.popMessage(blocking)
+            self.text[0] = self.msg
+            if self.Messager.MsgQueue:
+                self.text[0] += " --more--"
+        # self.Logger.log(f'Mesager {self.text}')
 
     def clear(self):
         '''clears the current msg to allow grabbing a new one'''
-        self.text = ''
+        self.msg = ''
 
 class HealthMenu(Menu):
     '''Displays the player health'''
-    def __init__(self, origin: tuple, length: tuple):
-        self.HealthBarLength = length-2
-        super().__init__(origin, length)
+    def __init__(self, screenBuffer: list, origin: tuple):
+        self.HealthBarLength = 20
+        super().__init__(screenBuffer,
+                         origin, rows=1, cols=self.HealthBarLength+2)
 
     def update(self, health=10, maxhealth=10):
+        super().update()
         if health < 0:
             health = 0
         amount = round((self.HealthBarLength * health / maxhealth))
-        self.text = '['+amount*'\u2588'+(self.HealthBarLength-amount)*' '+']'
+        self.text[0] = '['+amount*'\u2588'+(self.HealthBarLength-amount)*' '+']'
 
 class InventoryMenu(Menu):
-    def __init__(self, origin: tuple, length: tuple):
-        self.quiverName = ''
-        self.mainHandName = ''
-        self.offHandName = ''
-        self.headName = ''
-        self.bodyName = ''
-        self.feetName = ''
-        self.contentsName = ''
+    def __init__(self, screenBuffer: list, origin: tuple):
         self.count = 96
-        super().__init__(origin, length)
+        super().__init__(screenBuffer, origin, rows=20, cols=30)
     
     def update(self, inventory: Inventory=None):
         super().update()
+        self.text[0] = '=Inventory='
         if inventory:
-            self.quiverName = f'({self.letter()}) Quiver:\n  '
+            self.text[1] = f'({self.letter()}) Quiver:'
             if inventory.quiver:
-                self.quiverName += inventory.quiver.name
-            self.mainHandName = f'({self.letter()}) Main Hand:\n  '
+                self.text[2] = ' '+inventory.quiver.name
+            self.text[3] = f'({self.letter()}) Main Hand: '
             if inventory.mainHand:
-                self.mainHandName += inventory.mainHand.name
-            self.offHandName = f'({self.letter()}) Off Hand:\n  '
+                self.text[4] = ' '+inventory.mainHand.name
+            self.text[5] = f'({self.letter()}) Off Hand: '
             if inventory.offHand:
-                self.offHandName += inventory.offHand.name
-            self.headName = f'({self.letter()}) Head:\n  '
+                self.text[6] = ' '+inventory.offHand.name
+            self.text[7] = f'({self.letter()}) Head: '
             if inventory.head:
-                self.headName += inventory.head.name
-            self.bodyName = f'({self.letter()}) Body:\n  '
+                self.text[8] = ' '+inventory.head.name
+            self.text[9] = f'({self.letter()}) Body: '
             if inventory.body:
-                self.bodyName += inventory.body.name
-            self.feetName = f'({self.letter()}) Feet:\n  '
+                self.text[10] = ' '+inventory.body.name
+            self.text[11] = f'({self.letter()}) Feet: '
             if inventory.feet:
-                self.feetName += inventory.feet.name
-            self.contentsName = ''
+                self.text[12] = ' '+inventory.feet.name
+            self.text[13] = 'Bag:'
             if inventory.contents:
-                self.Logger.log(f'MY menu inventory {inventory.contents}')
-                for entity in inventory.contents:
-                    self.contentsName += f' ({self.letter()}): {entity.name}\n'
-        self.text = f'=Inventory=\n' \
-                    f'{self.quiverName}\n' \
-                    f'{self.mainHandName}\n' \
-                    f'{self.offHandName}\n' \
-                    f'\n' \
-                    f'Bag:\n'
-        self.text += self.contentsName
-
+                for idx, entity in enumerate(inventory.contents):
+                    self.text[14+idx] = f' ({self.letter()}): {entity.name}'
         self.count = 96
 
     def letter(self):
@@ -170,13 +160,13 @@ class MenuManager:
     '''
     Handles updating and displaying of game menus
     '''
-    def __init__(self):
+    def __init__(self, screenBuffer: list):
         '''Sets up all menus'''
-        self.TurnMenu = TurnMenu((20,0), 10)
-        self.DepthMenu = DepthMenu((20,10), 20)
-        self.MessageMenu = MessageMenu((0,0), 50)
-        self.HealthMenu = HealthMenu((21,0), 20)
-        self.InventoryMenu = InventoryMenu((1,50), 100)
+        self.TurnMenu = TurnMenu(screenBuffer, (20,0))
+        self.DepthMenu = DepthMenu(screenBuffer, (20,10))
+        self.MessageMenu = MessageMenu(screenBuffer, (0,0))
+        self.HealthMenu = HealthMenu(screenBuffer, (21,0))
+        self.InventoryMenu = InventoryMenu(screenBuffer, (1,50))
 
     def display(self, screenBuffer):
         '''Displays all menus to screen buffer'''

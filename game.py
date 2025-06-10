@@ -93,7 +93,7 @@ class Game:
                                 width=20,
                                 origin=(4,4),
                                 levels=3)
-        self.MenuManager = MenuManager()
+        self.MenuManager = MenuManager(self.ScreenBuffer)
         self.Messager = Messager()
         startPos = [1,1]
         self.LevelManager.defaultLevelSetupWalls(startPos)
@@ -132,8 +132,6 @@ class Game:
                 self.clearState()
             elif energy > 0:
                 self.loop(event, energy)
-            # update and grab any messages in the queue
-            self.messages()
             # rewrite all the map buffers and menu buffers to the screen
             self.prepareBuffers()
             # output screen buffer to terminal
@@ -167,8 +165,11 @@ class Game:
 
     def clearState(self):
         '''Clears the current message'''
-        self.Logger.log('clearing the state')
+        # clear the message queue
         self.MenuManager.MessageMenu.clear()
+        # grab new message
+        self.messages()
+        # update inventory menu
         self.MenuManager.InventoryMenu.update(
             self.LevelManager.Player.Inventory
         )
@@ -219,6 +220,9 @@ class Game:
         self.MenuManager.InventoryMenu.update(
             self.LevelManager.Player.Inventory
         )
+
+        # update and grab any messages in the queue
+        self.messages()
 
         # check for death
         if not self.GameState == GameState.END and self.lose():
