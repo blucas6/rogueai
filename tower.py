@@ -26,7 +26,7 @@ class StairUp(Entity):
         super().__init__(name='Upstair',
                          glyph='<',
                          color=Colors().white,
-                         layer=Layer.OBJECT_LAYER,
+                         layer=Layer.FLOOR_LAYER,
                          size=Size.VERY_LARGE)
 
 class StairDown(Entity):
@@ -35,7 +35,7 @@ class StairDown(Entity):
         super().__init__(name='Downstair',
                          glyph='>',
                          color=Colors().white,
-                         layer=Layer.OBJECT_LAYER,
+                         layer=Layer.FLOOR_LAYER,
                          size=Size.VERY_LARGE)
 
 class Light(Entity):
@@ -58,11 +58,3 @@ class Light(Entity):
             for pt in points:
                 lightLayer[pt[0]][pt[1]] = 1
     
-class Dart(Entity):
-
-    def __init__(self):
-        super().__init__(name='Dart',
-                         glyph=')',
-                         color=Colors().red,
-                         layer=Layer.OBJECT_LAYER,
-                         size=Size.VERY_SMALL)

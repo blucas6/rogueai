@@ -11,6 +11,7 @@ class Bite(Entity):
                          size=Size.VERY_SMALL)
         self.Attack = Attack(name='Bite',
                              damage=1)
+        self.PickUp = PickUp()
 
 class Sword(Entity):
     def __init__(self):
@@ -21,3 +22,13 @@ class Sword(Entity):
                          size=Size.SMALL)
         self.Attack = Attack(name='Slash',
                              damage=2)
+        self.PickUp = PickUp()
+
+class Dart(Entity):
+    def __init__(self):
+        super().__init__(name='Dart',
+                         glyph=')',
+                         color=Colors().red,
+                         layer=Layer.OBJECT_LAYER,
+                         size=Size.VERY_SMALL)
+        self.PickUp = PickUp()

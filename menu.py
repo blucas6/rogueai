@@ -134,7 +134,9 @@ class InventoryMenu(Menu):
             self.text[13] = 'Bag:'
             if inventory.contents:
                 for idx, entity in enumerate(inventory.contents):
-                    self.text[14+idx] = f' ({self.letter()}): {entity.name}'
+                    i = 14+idx
+                    if i < self.rows:
+                        self.text[i] = f' ({self.letter()}): {entity.name}'
         self.count = 96
 
     def letter(self):

@@ -126,10 +126,12 @@ class Entity:
         if self.layer > maxLayer:
             self.pos[0] = row
             self.pos[1] = col
+            # if charging, count as a move forward
             self.handleCharging('move')
             # entities that are activated are added to the entity stack
             entities = self.activate(entityLayer)
             return entities
+        # if charging, end the charge
         self.handleCharging('endmove')
 
     def validBounds(self, entityLayer, row, col):
@@ -158,9 +160,15 @@ class Entity:
         Check for any activatable entities upon entering a square
         '''
         entities = []
-        for entity in entityLayer[self.pos[0]][self.pos[1]]:
+        elist = entityLayer[self.pos[0]][self.pos[1]]
+        for idx, entity in enumerate(elist):
+            # check for an entity that has the activate component
             if entity is not self and hasattr(entity, 'Activate'):
                 entity.Activate.trigger()
+                entities.append(entity)
+            if entity is not self and hasattr(entity, 'PickUp') and hasattr(self, 'Inventory'):
+                self.Inventory.pickUp(entity)
+                entity.remove()
                 entities.append(entity)
         return entities
 

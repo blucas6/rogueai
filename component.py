@@ -14,6 +14,14 @@ def getOneLayerPts(myPos):
     '''
     return [[myPos[0]+pt[0],myPos[1]+pt[1]] for pt in ONE_LAYER_CIRCLE]
 
+class PickUp:
+    '''
+    Pick Up component, an entity will be automatically picked up upon walking
+    over it
+    '''
+    def __init__(self):
+        pass
+
 class Charge:
     '''
     Charge component, if an entity can run and charge
@@ -246,8 +254,8 @@ class Inventory:
             damage += self.offHand.Attack.damage
         return damage
     
-    def pickUp(self):
-        pass
+    def pickUp(self, entity):
+        self.contents.append(copy.deepcopy(entity))
 
     def drop(self):
         pass

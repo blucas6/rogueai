@@ -339,8 +339,8 @@ class LevelManager:
         # make sure player updates first
         entityStack.append(self.Player)
         while entityStack:
-            addEntities = []
             entity = entityStack.pop()
+            addEntities = [] # all entities to add to stack
             fromInput = []  # add to stack, came from input
             fromUpdate = [] # add to stack, came from update
             fromDeath = []  # add to stack, came from death
@@ -434,19 +434,31 @@ class LevelManager:
             c = entity.EntityLayerPos[1]
             idx = entity.EntityLayerPos[2]
             if idx >= len(level.EntityLayer[r][c]):
-                # not enough entity on the square for this entity to still be
+                # not enough entities on the square for this entity to still be
                 # here, must have already been removed
                 return True, []
             try:
                 if level.EntityLayer[r][c][idx].id == entity.id:
-                    del level.EntityLayer[r][c][idx]
+                    self.removeEntity(level, entity)
                     # call entity death ONLY if it is the same entity
                     entities = entity.death(level.EntityLayer)
-                    self.Logger.log(f'REMOVING: {entity.name} {r},{c},{idx}')
             except Exception as e:
                 self.Logger.log(f'Error: failed to remove {entity.name}:{r},{c},{idx}')
             return True, entities
         return False, []
+    
+    def removeEntity(self, level: Level, entity: Entity):
+        try:
+            r = entity.EntityLayerPos[0]
+            c = entity.EntityLayerPos[1]
+            idx = entity.EntityLayerPos[2]
+            del level.EntityLayer[r][c][idx]
+            self.Logger.log(f'REMOVING: {entity.name} {r},{c},{idx}')
+            # decrement the index for the other entities on the square
+            for i in range(idx, len(level.EntityLayer[r][c]), 1):
+                level.EntityLayer[r][c][i].EntityLayerPos[2] -= 1
+        except Exception as e:
+            self.Logger.log(f'Error: failed to remove {entity.name}:{r},{c},{idx}')
     
     def fixEntityPosition(self, entity: Entity, level: Level):
         '''
@@ -464,8 +476,10 @@ class LevelManager:
             idx = entity.EntityLayerPos[2]
             if (entity.pos[0] != r or entity.pos[1] != c):
                 # remove entity at old spot
-                # self.Logger.log(f'Trying to remove -> {entity.name} {entity.isActive} {entity.EntityLayerPos} {entity.pos}')
-                del level.EntityLayer[r][c][idx]
+                self.Logger.log(f'Trying to remove -> {entity.name} {entity.isActive} {entity.EntityLayerPos} {entity.pos}')
+                for e in level.EntityLayer[r][c]:
+                    self.Logger.log(f'at this spot: {e.name}')
+                self.removeEntity(level, entity)
                 # place new entity and update r, c, idx
                 level.placeEntity(entity, entity.pos)
             # move entity to another level
