@@ -200,7 +200,7 @@ class Inventory:
     def equip(self, entity):
         if hasattr(self, 'Quiver'):
             if self.quiver:
-                if self.quiver[0].name != entity.name:
+                if self.quiver.name != entity.name:
                     self.contents.append(copy.deepcopy(self.quiver))
                 self.quiver = copy.deepcopy(entity)
         elif hasattr(self, 'Wear'):
@@ -222,6 +222,21 @@ class Inventory:
             if self.mainHand:
                 self.offHand = copy.deepcopy(self.mainHand)
             self.mainHand = copy.deepcopy(entity)
+    
+    def unequip(self, entity):
+        if self.quiver and self.quiver.id == entity.id:
+            self.quiver = None
+        elif self.head and self.head.id == entity.id:
+            self.head = None
+        elif self.body and self.body.id == entity.id:
+            self.body = None
+        elif self.feet and self.feet.id == entity.id:
+            self.feet = None
+        elif self.mainHand and self.mainHand.id == entity.id:
+            self.mainHand = None
+        elif self.offHand and self.offHand.id == entity.id:
+            self.offHand = None
+        self.contents.append(copy.deepcopy(entity))
 
     def dealDamage(self):
         damage = 0

@@ -351,7 +351,7 @@ class Game:
                 if self.previousEvent == '5':
                     self.stateMachine('startrun')
                 return 1,self.previousEvent+event
-            elif self.previousEvent == 'e':
+            elif self.previousEvent == 'e' or self.previousEvent == 'u':
                 # Inventory Action
                 self.LevelManager.Player.handleInventoryAction(
                     self.previousEvent,
@@ -370,16 +370,20 @@ class Game:
         elif event == ' ':
             # DO NOTHING - clears msg queue
             return 0,event
-        elif (event == 't' or event == '5' and
+        elif ((event == 't' or event == '5') and
               self.GameState == GameState.PLAYING):
             # Multi key action
             self.Messager.addMessage('Direction?')
             self.stateMachine('motion')
             self.previousEvent = event
             return 0,event
-        elif event == 'e' and self.GameState == GameState.PLAYING:
+        elif ((event == 'e' or event == 'u') and
+              self.GameState == GameState.PLAYING):
             # Multi key action
-            self.Messager.addMessage('Equip what?')
+            if event == 'e':
+                self.Messager.addMessage('Equip what?')
+            elif event == 'u':
+                self.Messager.addMessage('Unequip what?')
             self.stateMachine('motion')
             self.previousEvent = event
             return 0,event

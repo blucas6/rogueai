@@ -58,6 +58,10 @@ class Player(Entity):
             entity = self.Inventory.getEntityFromKey(key)
             if entity:
                 self.Inventory.equip(entity)
+        elif event == 'u':
+            entity = self.Inventory.getEntityFromKey(key)
+            if entity:
+                self.Inventory.unequip(entity)
 
     def input(self, energy, entityLayer, playerPos, playerZ, event):
         '''
