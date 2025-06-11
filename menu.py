@@ -113,22 +113,22 @@ class InventoryMenu(Menu):
         super().update()
         self.text[0] = '=Inventory='
         if inventory:
-            self.text[1] = f'({self.letter()}) Quiver:'
+            self.text[1] = f'(Q)uiver:'
             if inventory.quiver:
                 self.text[2] = ' '+inventory.quiver.name
-            self.text[3] = f'({self.letter()}) Main Hand: '
+            self.text[3] = f'(M)ain Hand: '
             if inventory.mainHand:
                 self.text[4] = ' '+inventory.mainHand.name
-            self.text[5] = f'({self.letter()}) Off Hand: '
+            self.text[5] = f'(O)ff Hand: '
             if inventory.offHand:
                 self.text[6] = ' '+inventory.offHand.name
-            self.text[7] = f'({self.letter()}) Head: '
+            self.text[7] = f'(H)ead: '
             if inventory.head:
                 self.text[8] = ' '+inventory.head.name
-            self.text[9] = f'({self.letter()}) Body: '
+            self.text[9] = f'(B)ody: '
             if inventory.body:
                 self.text[10] = ' '+inventory.body.name
-            self.text[11] = f'({self.letter()}) Feet: '
+            self.text[11] = f'(F)eet: '
             if inventory.feet:
                 self.text[12] = ' '+inventory.feet.name
             self.text[13] = 'Bag:'

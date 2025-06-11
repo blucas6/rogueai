@@ -174,36 +174,37 @@ class Inventory:
             self.Logger.log(f'  {e.name}')
     
     def getEntityFromKey(self, char):
+        entity = None
         try:
-            key = ord(char) - 97
-            Logger().log(f'inventory {char} {key}')
-            if key == 0:
+            if char == 'Q':
                 entity = copy.deepcopy(self.quiver)
                 self.quiver = None
-                return entity
-            elif key == 1:
+            elif char == 'M':
                 entity = copy.deepcopy(self.mainHand)
                 self.mainHand = None
-                return entity
-            elif key == 2:
+            elif char == 'O':
                 entity = copy.deepcopy(self.offHand)
                 self.offHand = None
-                return entity
-            elif key == 3:
-                return self.head
-            elif key == 4:
-                return self.body
-            elif key == 5:
-                return self.feet
-            elif key-6 < len(self.contents):
-                entity = copy.deepcopy(self.contents[key-6])
-                del self.contents[key-6]
-                return entity
+            elif char == 'H':
+                entity = copy.deepcopy(self.head)
+                self.head = None
+            elif char == 'B':
+                entity = copy.deepcopy(self.body)
+                self.body = None
+            elif char == 'F':
+                entity = copy.deepcopy(self.feet)
+                self.feet = None
             else:
-                raise
+                key = ord(char) - 97
+                self.Logger.log(f'Inventory key: {key} {char}')
+                if key < len(self.contents):
+                    entity = copy.deepcopy(self.contents[key])
+                    del self.contents[key]
+                else:
+                    raise
         except Exception as e:
             Messager().addMessage('Invalid inventory key!')
-            return
+        return entity
 
     def equip(self, entity):
         if hasattr(self, 'Quiver'):
