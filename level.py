@@ -6,6 +6,7 @@ from logger import Logger, Timing
 from animation import *
 from algo import dijkstra
 import copy
+from collections import deque
 
 class Level:
     '''
@@ -307,7 +308,7 @@ class LevelManager:
         else:
             self.Logger.log(f'Error: invalid placement of player!')
 
-    def updateCurrentLevel(self, playerEvent, turn, energy):
+    def updateCurrentLevel(self, playerEvent, turn):
         '''
         Go through current level layer and update entities
         
@@ -328,58 +329,93 @@ class LevelManager:
         # timing
         self.Timing.start('Game Loop')
 
+        self.Logger.log('---------------------')
+
         level = self.Levels[self.CurrentZ]
 
         # clear light layer
         level.LightLayer = [[0 for _ in range(self.width)]
                                 for _ in range(self.height)]
-        # get list of all entities to update
-        entityStack = [entity for row in level.EntityLayer 
-                            for entityList in row for entity in entityList]
+        energy = 0
         # make sure player updates first
-        entityStack.append(self.Player)
+        entityStack = deque()
+        front,end = self.entityUpdate(self.Player, level, turn, playerEvent)
+        for e in front:
+            entityStack.append(e)
+        energy = self.Player.getEnergy()
+        self.Logger.log(f'getting energy: {energy}')
+        # get list of all entities to update
+        for row in level.EntityLayer:
+            for entityList in row:
+                for entity in entityList:
+                    if not entity in front:
+                        entityStack.append(entity)
+        # give energy
+        for entity in entityStack:
+            if not isinstance(entity, Player):
+                entity.energy += energy
         while entityStack:
             entity = entityStack.pop()
-            addEntities = [] # all entities to add to stack
-            fromInput = []  # add to stack, came from input
-            fromUpdate = [] # add to stack, came from update
-            fromDeath = []  # add to stack, came from death
-            isDead, fromDeath = self.removeIfDead(entity, level)
-            if not isDead:
-                # entity is alive
-                if entity.turn < turn:
-                    # entity has not yet taken a turn
-                    entity.turn = turn
-                    fromInput = entity.input(energy,
-                                            level.EntityLayer,
-                                            self.Player.pos,
-                                            self.Player.z,
-                                            playerEvent)
-                # always call entity update
-                fromUpdate = entity.update(level.EntityLayer,
-                                         self.Player.pos,
-                                         level.LightLayer)
-                # move entity to correct position
-                self.fixEntityPosition(entity, level)
-            
-            # add other entities affected to the stack
-            if fromInput:
-                addEntities.extend(fromInput)
-            if fromUpdate:
-                addEntities.extend(fromUpdate)
-            if fromDeath:
-                addEntities.extend(fromDeath)
+            addEntities, endEntities = self.entityUpdate(
+                entity,
+                level,
+                turn,
+                playerEvent
+            )
             if addEntities:
                 for e in addEntities:
                     if e:
                         self.Logger.log(f'Adding -> {e.name} {e.pos}')
                         entityStack.append(e)
-
-            # play animations (could be queued from death)
-            self.Timing.pause()
-            self.animations()
-            self.Timing.resume()
         self.Timing.end()
+
+    def entityUpdate(self, entity: Entity, level: Level, turn: int,
+                     playerEvent):
+        addEntities = [] # all entities to add to stack
+        endEntities = []
+        fromInput = []  # add to stack, came from input
+        fromUpdate = [] # add to stack, came from update
+        fromDeath = []  # add to stack, came from death
+        isDead, fromDeath = self.removeIfDead(entity, level)
+        if not isDead:
+            # entity is alive
+            if entity.turn < turn:
+                entity.tookTurn = False
+                # entity has not yet taken a turn
+                fromInput = entity.input(
+                    level.EntityLayer,
+                    self.Player.pos,
+                    self.Player.z,
+                    playerEvent
+                )
+                # if this is the player
+                if isinstance(entity, Player):
+                    entity.turn = turn
+                elif entity.energy > 0 and entity.tookTurn:
+                    self.Logger.log(f'Not finished turn -> {entity.name} {entity.tookTurn}')
+                    endEntities.append(entity)
+                else:
+                    entity.turn = turn
+            # always call entity update
+            fromUpdate = entity.update(level.EntityLayer,
+                                        self.Player.pos,
+                                        level.LightLayer)
+            # move entity to correct position
+            self.fixEntityPosition(entity, level)
+        
+        # add other entities affected to the stack
+        if fromInput:
+            addEntities.extend(fromInput)
+        if fromUpdate:
+            addEntities.extend(fromUpdate)
+        if fromDeath:
+            addEntities.extend(fromDeath)
+
+        # play animations (could be queued from death)
+        self.Timing.pause()
+        self.animations()
+        self.Timing.resume()
+        return addEntities, endEntities
 
     def animations(self):
         '''
@@ -477,8 +513,8 @@ class LevelManager:
             if (entity.pos[0] != r or entity.pos[1] != c):
                 # remove entity at old spot
                 self.Logger.log(f'Trying to remove -> {entity.name} {entity.isActive} {entity.EntityLayerPos} {entity.pos}')
-                for e in level.EntityLayer[r][c]:
-                    self.Logger.log(f'at this spot: {e.name}')
+                # for e in level.EntityLayer[r][c]:
+                #     self.Logger.log(f'at this spot: {e.name}')
                 self.removeEntity(level, entity)
                 # place new entity and update r, c, idx
                 level.placeEntity(entity, entity.pos)

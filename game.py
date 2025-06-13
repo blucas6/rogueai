@@ -8,6 +8,12 @@ from logger import Logger, Timing
 from menu import MenuManager, GameState
 from message import Messager
 import secrets
+from enum import Enum
+
+class Event(Enum):
+    NA = -1
+    CLEAR = 0
+    EVENT = 1
 
 class Game:
     '''
@@ -103,7 +109,7 @@ class Game:
         )
         self.Timing.end()
         # update the game one time (generates FOV)
-        self.loop(event=' ', energy=0)
+        self.loop(event='.')
 
     def start(self, stdscr: curses.window=None):
         '''
@@ -126,12 +132,12 @@ class Game:
         '''
         while self.running:
             # check for events
-            event,energy = self.processEvents()
+            event,eventtype = self.processEvents()
             # update the game
-            if energy == 0:
+            if eventtype == Event.CLEAR:
                 self.clearState()
-            elif energy > 0:
-                self.loop(event, energy)
+            elif eventtype == Event.EVENT :
+                self.loop(event)
             # rewrite all the map buffers and menu buffers to the screen
             self.prepareBuffers()
             # output screen buffer to terminal
@@ -156,9 +162,9 @@ class Game:
         '''
         event = self.Engine.readInput()
         if self.GameState != GameState.RUNNING:
-            energy,event = self.getEnergy(event)
+            energy,event = self.eventType(event)
         else:
-            energy = 1
+            energy = Event.EVENT
             event = ' '
             self.Engine.pause(self.LevelManager.Player.Charge.frameSpeed)
         return event, energy
@@ -174,7 +180,7 @@ class Game:
             self.LevelManager.Player.Inventory
         )
 
-    def loop(self, event, energy):
+    def loop(self, event):
         '''
         Execute one loop in the game loop
         '''
@@ -191,8 +197,7 @@ class Game:
         # update all entities
         self.LevelManager.updateCurrentLevel(
             event,
-            self.MenuManager.TurnMenu.count,
-            energy
+            self.MenuManager.TurnMenu.count
         )
 
         # player has moved to a new level
@@ -200,8 +205,7 @@ class Game:
             # update all entities again
             self.LevelManager.updateCurrentLevel(
                 event,
-                self.MenuManager.TurnMenu.count,
-                energy
+                self.MenuManager.TurnMenu.count
             )
             self.LevelManager.Player.clearMentalMap(
                 self.LevelManager.getCurrentLevel().EntityLayer)
@@ -323,7 +327,7 @@ class Game:
                     color = Colors().yellow
                     self.ColorBuffer[rw][cl] = color
     
-    def getEnergy(self, event):
+    def eventType(self, event):
         '''
         Process key press event from engine
 
@@ -332,11 +336,11 @@ class Game:
             0 : will not cause an update because turn counter does not increase,
                 updates menus
 
-            1 : counts as a energy for updating entities
+            1+ : counts as a energy for updating entities
         '''
         # disregard empty events
         if not event:
-            return -1,event
+            return Event.NA,event
         if self.GameState == GameState.MOTION:
             self.stateMachine('donemotion')
             # MOTION EVENTS
@@ -345,18 +349,15 @@ class Game:
                 # expects a direction
                 if not event.isdigit() or event == '5':
                     self.Messager.addMessage('Invalid direction!')
-                    return 0,event
+                    return Event.CLEAR,event
                 # valid direction increment turn
                 # return the combined event
                 if self.previousEvent == '5':
                     self.stateMachine('startrun')
-                return 1,self.previousEvent+event
+                return Event.EVENT,self.previousEvent+event
             elif self.previousEvent == 'e' or self.previousEvent == 'u':
                 # Inventory Action
-                self.LevelManager.Player.handleInventoryAction(
-                    self.previousEvent,
-                    event)
-                return 0,event
+                return Event.EVENT,self.previousEvent+event
         if event == chr(ascii.ESC) or event == 'q':
             # QUIT
             self.running = False
@@ -369,14 +370,14 @@ class Game:
             self.playerFOV = not self.playerFOV
         elif event == ' ':
             # DO NOTHING - clears msg queue
-            return 0,event
+            return Event.CLEAR,event
         elif ((event == 't' or event == '5') and
               self.GameState == GameState.PLAYING):
             # Multi key action
             self.Messager.addMessage('Direction?')
             self.stateMachine('motion')
             self.previousEvent = event
-            return 0,event
+            return Event.CLEAR,event
         elif ((event == 'e' or event == 'u') and
               self.GameState == GameState.PLAYING):
             # Multi key action
@@ -386,13 +387,12 @@ class Game:
                 self.Messager.addMessage('Unequip what?')
             self.stateMachine('motion')
             self.previousEvent = event
-            return 0,event
+            return Event.CLEAR,event
         elif self.GameState == GameState.PLAYING:
             # PLAYER ACTION
-            self.Logger.log(f'player action: {event}')
-            return 1,event
+            return Event.EVENT,event
         # Defaults to returning -1 for no action
-        return -1,event
+        return Event.NA,event
 
     def stateMachine(self, event):
         '''

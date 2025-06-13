@@ -66,6 +66,8 @@ class Newt(Entity):
         self.Health = Health(health=3)
         self.Brain = Brain(sightRange=5, blockingLayer=Layer.MONST_LAYER)
         self.Inventory = Inventory()
+        self.speed = Speed.SLOW
+        self.attackSpeed = AttackSpeed.SLOW
         super().__init__(name='Newt',
                          glyph='n',
                          color=Colors().yellow,
@@ -76,16 +78,17 @@ class Newt(Entity):
         super().setup()
         self.Inventory.equip(Bite())
 
-    def input(self, energy, entityLayer, playerPos, playerZ, *args):
+    def input(self, entityLayer, playerPos, playerZ, *args):
         '''
         Uses brain to select an action
         '''
-        if energy > 0:
-            return self.doAction(
-                    self.Brain.input(self.pos,
-                                     self.z,
-                                     playerPos,
-                                     playerZ,
-                                     entityLayer),
-                    entityLayer
-                )
+        return self.doAction(
+            self.Brain.input(
+                self.pos,
+                self.z,
+                playerPos,
+                playerZ,
+                entityLayer
+            ),
+            entityLayer
+        )

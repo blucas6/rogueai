@@ -26,13 +26,15 @@ class Charge:
     '''
     Charge component, if an entity can run and charge
     '''
-    def __init__(self):
+    def __init__(self, speed):
         self.charging = False
         '''If entity is currently charging'''
         self.distance = 0
         '''Distance covered by charge - for damage'''
         self.frameSpeed = 0.005
         '''How much time the engine sleeps during charge'''
+        self.entitySpeed = speed
+        self.cost = speed-1
 
     def start(self, direction: int):
         '''Start the charge, sets direction'''
@@ -42,7 +44,7 @@ class Charge:
     def end(self):
         '''Ends the charge, returns how much damage was dealt'''
         dmg = self.distance
-        self.__init__()
+        self.__init__(self.entitySpeed)
         return dmg
 
 class Activate:
@@ -74,7 +76,7 @@ class Brain:
             pts = self.getFOVFromEntityLayer(entityLayer, myPos)
             if tuple(playerPos) in pts:
                 return self.moveTowardsPoint(myPos, playerPos)
-        return '5'
+        return '.'
     
     def moveTowardsPoint(self, myPos, otherPos):
         '''Moves towards a point on the map'''
@@ -97,7 +99,7 @@ class Brain:
                 return '6'
             elif otherPos[1] < myPos[1]:
                 return '4'
-        return '5'
+        return '.'
     
     def getFOVFromEntityLayer(self, entityLayer, currPos):
         '''Use FOV algorithm to get which points are visible'''
@@ -159,6 +161,7 @@ class Inventory:
         self.feet = None
         self.contents = []
         self.maxContents = 10
+        self.cost = 1
 
     def show(self):
         self.Logger = Logger()

@@ -37,10 +37,15 @@ class Player(Entity):
         '''For FOV, highest level (exclusive) to see through'''
         self.Brain = Brain(self.sightRange, self.blockingLayer)
         '''Player brain for game interactions'''
-        self.Charge = Charge()
-        '''Player can run'''
         self.Inventory = Inventory()
-        ''''''
+        '''Inventory component'''
+        self.speed = Speed.AVERAGE
+        '''Speed component'''
+        self.attackSpeed = AttackSpeed.AVERAGE
+        '''Attack speed'''
+        self.throwSpeed = AttackSpeed.AVERAGE
+        self.Charge = Charge(self.speed)
+        '''Player can run'''
         super().__init__(name='Player',
                          glyph='@',
                          color=Colors().white,
@@ -49,26 +54,22 @@ class Player(Entity):
 
     def setup(self):
         super().setup()
-        # self.Inventory.equip(Sword())
         self.Inventory.contents.append(Sword())
-    
-    def handleInventoryAction(self, event, key):
-        self.Inventory.show()
-        if event == 'e':
-            entity = self.Inventory.getEntityFromKey(key)
-            if entity:
-                self.Inventory.equip(entity)
-        elif event == 'u':
-            entity = self.Inventory.getEntityFromKey(key)
-            if entity:
-                self.Inventory.unequip(entity)
+        self.energy = 100
 
-    def input(self, energy, entityLayer, playerPos, playerZ, event):
+    def input(self, entityLayer, playerPos, playerZ, event):
         '''
         Receives the player event and uses it
         '''
-        self.Logger.log(f'Player event: {event}')
-        return self.doAction(event, entityLayer)
+        entities = self.doAction(event, entityLayer)
+        return entities
+
+    def getEnergy(self):
+        energyused = 100 - self.energy
+        self.energy = 100
+        if energyused == 100:
+            energyused = self.speed
+        return energyused
 
     def setupFOV(self, entityLayer, lightLayer):
         '''Get the FOV for the player'''
