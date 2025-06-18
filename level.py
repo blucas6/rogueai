@@ -336,24 +336,27 @@ class LevelManager:
         # clear light layer
         level.LightLayer = [[0 for _ in range(self.width)]
                                 for _ in range(self.height)]
+        # energy amount for this round
         energy = 0
-        # make sure player updates first
+        # update stack
         entityStack = deque()
+        # make sure player updates first
         front,end = self.entityUpdate(self.Player, level, turn, playerEvent)
         for e in front:
             entityStack.append(e)
+        # calculate player energy use
         energy = self.Player.getEnergy()
-        self.Logger.log(f'getting energy: {energy}')
         # get list of all entities to update
         for row in level.EntityLayer:
             for entityList in row:
                 for entity in entityList:
                     if not entity in front:
                         entityStack.append(entity)
-        # give energy
+        # distribute energy
         for entity in entityStack:
             if not isinstance(entity, Player):
                 entity.energy += energy
+        # stack loop
         while entityStack:
             entity = entityStack.pop()
             addEntities, endEntities = self.entityUpdate(
@@ -362,11 +365,19 @@ class LevelManager:
                 turn,
                 playerEvent
             )
+            # any entities to add to the stack
             if addEntities:
                 for e in addEntities:
                     if e:
                         self.Logger.log(f'Adding -> {e.name} {e.pos}')
                         entityStack.append(e)
+            # any entities that have more turns
+            if endEntities:
+                for e in endEntities:
+                    if e:
+                        self.Logger.log(f'Extra turns -> {e.name} {e.pos}')
+                        entityStack.appendleft(e)
+
         self.Timing.end()
 
     def entityUpdate(self, entity: Entity, level: Level, turn: int,

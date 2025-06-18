@@ -34,7 +34,9 @@ class Charge:
         self.frameSpeed = 0.005
         '''How much time the engine sleeps during charge'''
         self.entitySpeed = speed
+        '''Keeps track of entity speed'''
         self.cost = speed-1
+        '''Energy cost for charging move'''
 
     def start(self, direction: int):
         '''Start the charge, sets direction'''
@@ -154,16 +156,26 @@ class Inventory:
     '''
     def __init__(self):
         self.quiver = None
+        '''Item in quiver'''
         self.mainHand = None
+        '''Item in main hand'''
         self.offHand = None
+        '''Item in off hand'''
         self.head = None
+        '''Item on head'''
         self.body = None
+        '''Item on body'''
         self.feet = None
+        '''Item on feet'''
         self.contents = []
+        '''Contents of bag'''
         self.maxContents = 10
+        '''Max amount of items in bag'''
         self.cost = 1
+        '''Cost of using the inventory'''
 
     def show(self):
+        '''Print the inventory to logger'''
         self.Logger = Logger()
         self.Logger.log('Inventory')
         self.Logger.log(f' Quiver: {self.quiver}')
@@ -177,6 +189,11 @@ class Inventory:
             self.Logger.log(f'  {e.name}')
     
     def getEntityFromKey(self, char):
+        '''
+        For a certain character, return the item in the inventory
+        
+        Will return None in some cases
+        '''
         entity = None
         try:
             if char == 'Q':
@@ -210,11 +227,14 @@ class Inventory:
         return entity
 
     def equip(self, entity):
+        '''Pass in an entity to place it in the correct slot'''
+        # QUIVER
         if hasattr(self, 'Quiver'):
             if self.quiver:
                 if self.quiver.name != entity.name:
                     self.contents.append(copy.deepcopy(self.quiver))
                 self.quiver = copy.deepcopy(entity)
+        # WEARABLE
         elif hasattr(self, 'Wear'):
             if entity.Wear == Wear.HEAD:
                 if self.head:
@@ -228,6 +248,7 @@ class Inventory:
                 if self.feet:
                     self.contents.append(copy.deepcopy(self.feet))
                 self.feet = copy.deepcopy(entity)
+        # MAIN / OFF HAND
         else:
             if self.offHand:
                 self.contents.append(copy.deepcopy(self.offHand))
@@ -236,6 +257,10 @@ class Inventory:
             self.mainHand = copy.deepcopy(entity)
     
     def unequip(self, entity):
+        '''
+        Pass in an entity to set the corresponding slot to empty and place
+        the entity into the bag
+        '''
         if self.quiver and self.quiver.id == entity.id:
             self.quiver = None
         elif self.head and self.head.id == entity.id:
@@ -251,6 +276,7 @@ class Inventory:
         self.contents.append(copy.deepcopy(entity))
 
     def dealDamage(self):
+        '''Based on the slot information calculate the damage'''
         damage = 0
         if self.mainHand and hasattr(self.mainHand, 'Attack'):
             damage += self.mainHand.Attack.damage
@@ -259,9 +285,11 @@ class Inventory:
         return damage
     
     def pickUp(self, entity):
+        '''Pass in an entity to add it to the bag'''
         self.contents.append(copy.deepcopy(entity))
 
     def drop(self):
+        '''Place an entity to the ground'''
         pass
 
 class Attack:

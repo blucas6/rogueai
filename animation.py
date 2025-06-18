@@ -31,6 +31,7 @@ class Animator:
         if not self._initialized:
             self._initialized = True
             self.AnimationQueue = []
+            '''Queue of animation objects'''
 
     def queueUp(self, animation: Animation):
         '''

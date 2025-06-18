@@ -66,6 +66,7 @@ class Game:
         '''
         # initialize engine
         self.termRows, self.termCols = self.Engine.init(stdscr, timeDelay)
+        # create buffers
         self.ScreenBuffer = [[' ' for _ in range(self.termCols-1)] 
                                     for _ in range(self.termRows-1)]
         self.ColorBuffer = [[Colors().white for _ in range(self.termCols-1)] 
@@ -162,12 +163,13 @@ class Game:
         '''
         event = self.Engine.readInput()
         if self.GameState != GameState.RUNNING:
-            energy,event = self.eventType(event)
+            eventType,event = self.eventType(event)
         else:
-            energy = Event.EVENT
+            # do not check for events if running
+            eventType = Event.EVENT
             event = ' '
             self.Engine.pause(self.LevelManager.Player.Charge.frameSpeed)
-        return event, energy
+        return event, eventType
 
     def clearState(self):
         '''Clears the current message'''
@@ -290,6 +292,7 @@ class Game:
         '''
         Build buffers according to layer information
         '''
+        # FOV
         if self.playerFOV:
             entityLayer = self.LevelManager.Player.mentalMap
         else:

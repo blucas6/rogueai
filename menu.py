@@ -98,6 +98,7 @@ class HealthMenu(Menu):
                          origin, rows=1, cols=self.HealthBarLength+2)
 
     def update(self, health=10, maxhealth=10):
+        '''Update the health bar'''
         super().update()
         if health < 0:
             health = 0
@@ -105,11 +106,13 @@ class HealthMenu(Menu):
         self.text[0] = '['+amount*'\u2588'+(self.HealthBarLength-amount)*' '+']'
 
 class InventoryMenu(Menu):
+    '''Displays the player inventory'''
     def __init__(self, screenBuffer: list, origin: tuple):
         self.count = 96
         super().__init__(screenBuffer, origin, rows=20, cols=30)
     
     def update(self, inventory: Inventory=None):
+        '''Update the current inventory menu'''
         super().update()
         self.text[0] = '=Inventory='
         if inventory:
@@ -140,6 +143,7 @@ class InventoryMenu(Menu):
         self.count = 96
 
     def letter(self):
+        '''Return the correct character incremented from the previous'''
         self.count += 1
         return chr(self.count)
 

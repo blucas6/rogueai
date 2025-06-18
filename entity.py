@@ -8,6 +8,7 @@ from algo import *
 from animation import *
 
 class AttackSpeed(IntEnum):
+    '''Corresponding energy costs for attacking'''
     VERY_SLOW = 7
     SLOW = 6
     AVERAGE = 5
@@ -15,6 +16,7 @@ class AttackSpeed(IntEnum):
     VERY_FAST = 3
 
 class Speed(IntEnum):
+    '''Corresponding energy costs for movements'''
     VERY_SLOW = 9
     SLOW = 8
     AVERAGE = 7
@@ -125,16 +127,19 @@ class Entity:
             self.energy -= cost
     
     def handleInventory(self, event, entityLayer):
+        '''Checks if an entity has an inventory and works with it'''
         if hasattr(self, 'Inventory'):
             self.Inventory.show()
             if len(event) > 1 and self.energy >= self.Inventory.cost:
                 key = event[1]
                 event = event[0]
+                # EQUIP
                 if event == 'e':
                     self.takeTurn(self.Inventory.cost)
                     entity = self.Inventory.getEntityFromKey(key)
                     if entity:
                         self.Inventory.equip(entity)
+                # UNEQUIP
                 elif event == 'u':
                     self.takeTurn(self.Inventory.cost)
                     entity = self.Inventory.getEntityFromKey(key)
@@ -145,14 +150,19 @@ class Entity:
         '''Checks if an entity can charge and is charging'''
         if hasattr(self, 'Charge'):
             if self.Charge.charging:
+                # see if charging is feasible
                 if state == 'trymove':
                     return self.Charge.cost
+                # increment charge
                 if state == 'move':
                     self.Charge.distance += 1
+                # end the charge
                 elif state == 'endmove' or state == 'invalid':
                     self.Charge.end()
+                # deal damage and end charge
                 elif state == 'damage':
                     return self.Charge.end()
+            # start the charge
             elif state == 'start':
                 self.Charge.start(int(direction))
                 self.movement(self.Charge.direction, entityLayer)
@@ -166,14 +176,17 @@ class Entity:
         If an entity is charging and the position is invalid, it will end the
         charge
         '''
+        # check for speed component
         if hasattr(self, 'speed'):
-            maxLayer = max([x.layer for x in entityLayer[row][col]])
+            # check if charging
             chargeCost = self.handleCharging('trymove')
+            maxLayer = max([x.layer for x in entityLayer[row][col]])
+            # calculate if layer is valid
             if self.layer > maxLayer:
-                if not chargeCost:
-                    cost = self.speed
-                else:
+                if chargeCost:
                     cost = chargeCost
+                else:
+                    cost = self.speed
                 if self.energy >= cost:
                     # move is valid
                     self.pos[0] = row
@@ -186,7 +199,7 @@ class Entity:
                     self.Logger.log(f'energy after a move: {self.energy}')
                     return entities
             else:
-                # hit a wall
+                # hit a wall or something
                 if chargeCost and self.energy >= chargeCost:
                     # entity was charging
                     self.takeTurn(chargeCost)
@@ -227,7 +240,11 @@ class Entity:
             if entity is not self and hasattr(entity, 'Activate'):
                 entity.Activate.trigger()
                 entities.append(entity)
-            if entity is not self and hasattr(entity, 'PickUp') and hasattr(self, 'Inventory'):
+            # check if entity has a pick up component and is valid
+            if (entity is not self and
+                hasattr(entity, 'PickUp') and
+                hasattr(self, 'Inventory') and
+                entity.isActive):
                 self.Inventory.pickUp(entity)
                 entity.remove()
                 entities.append(entity)
@@ -290,9 +307,6 @@ class Entity:
                     if kill:
                         return True, [kill]
                 # did not take a turn but attack was still valid
-                # optional: lose all remaining energy if possible to attack
-                # but did not
-                self.energy = 0
                 return True, None
         return False, None
 
@@ -444,4 +458,5 @@ class Entity:
             # resting
             self.takeTurn()
         else:
+            # do nothing
             self.takeTurn()

@@ -53,6 +53,7 @@ class Player(Entity):
                          size=Size.LARGE)
 
     def setup(self):
+        '''Setup the player'''
         super().setup()
         self.Inventory.contents.append(Sword())
         self.energy = 100
@@ -65,6 +66,7 @@ class Player(Entity):
         return entities
 
     def getEnergy(self):
+        '''Return how much energy the player used'''
         energyused = 100 - self.energy
         self.energy = 100
         if energyused == 100:
