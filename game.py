@@ -225,9 +225,6 @@ class Game:
             self.LevelManager.Player.Inventory
         )
 
-        # update and grab any messages in the queue
-        self.messages()
-
         # check for death
         if not self.GameState == GameState.END and self.lose():
             self.Messager.addMessage('You died!')
@@ -241,6 +238,9 @@ class Game:
         # check to end the charge
         if not self.LevelManager.Player.Charge.charging:
             self.stateMachine('endrun')
+
+        # update and grab any messages in the queue
+        self.messages()
 
     def render(self):
         '''

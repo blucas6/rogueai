@@ -117,9 +117,9 @@ class Entity:
         '''
         self.isActive = False
     
-    def takeTurn(self, cost):
+    def takeTurn(self, cost=0):
         self.tookTurn = True
-        if cost > self.energy:
+        if cost == 0:
             self.energy = 0
         else:
             self.energy -= cost
@@ -287,9 +287,12 @@ class Entity:
                         damage
                     )
                     self.takeTurn(cost)
-                    # exit if an attack was triggered
                     if kill:
                         return True, [kill]
+                # did not take a turn but attack was still valid
+                # optional: lose all remaining energy if possible to attack
+                # but did not
+                self.energy = 0
                 return True, None
         return False, None
 
@@ -439,6 +442,6 @@ class Entity:
             self.handleInventory(event, entityLayer)
         elif event == '.':
             # resting
-            self.takeTurn(100)
+            self.takeTurn()
         else:
-            self.takeTurn(100)
+            self.takeTurn()

@@ -66,14 +66,14 @@ class Newt(Entity):
         self.Health = Health(health=3)
         self.Brain = Brain(sightRange=5, blockingLayer=Layer.MONST_LAYER)
         self.Inventory = Inventory()
-        self.speed = Speed.SLOW
+        self.speed = Speed.VERY_SLOW
         self.attackSpeed = AttackSpeed.SLOW
         super().__init__(name='Newt',
                          glyph='n',
                          color=Colors().yellow,
                          layer=Layer.MONST_LAYER,
                          size=Size.MEDIUM)
-    
+
     def setup(self):
         super().setup()
         self.Inventory.equip(Bite())
