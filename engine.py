@@ -11,7 +11,7 @@ class Engine:
     def __init__(self, debug=False):
         self.inputTimeout = 1
         '''optional ms between engine display'''
-        self.stdscr = None
+        self.stdscr: curses.window = None
         '''curses.window'''
         self.ErrorLog = 'ErrorLog.log'
         '''where to dump errors'''
@@ -36,7 +36,7 @@ class Engine:
             return True
         return False
 
-    def init(self, stdscr: curses.window, timeDelay: int=None):
+    def init(self, stdscr: curses.window, timeDelay: int=0):
         '''
         Required to call at engine startup, returns size of terminal
         '''
@@ -47,7 +47,7 @@ class Engine:
         curses.curs_set(0)
         stdscr.nodelay(True)
         stdscr.timeout(self.inputTimeout)
-        if timeDelay:
+        if timeDelay > 0:
             self.FrameDelay = timeDelay
         # clear logs
         with open(self.ErrorLog, 'w+') as el:
@@ -119,7 +119,7 @@ class Engine:
         else:
             self.logError(f'Invalid cursor position {pos}')
 
-    def pause(self, t=1):
+    def pause(self, t: float=1):
         '''
         Sleeps the engine for t amount of seconds
         

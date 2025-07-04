@@ -254,7 +254,7 @@ class LevelManager:
         '''How many levels to hold'''
         self.CurrentZ = 0
         '''Current level indicator'''
-        self.Player = None
+        self.Player = Player(0,0)
         '''Player object'''
         self.Animator = Animator()
         '''Animation manager'''

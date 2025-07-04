@@ -1,4 +1,5 @@
 import curses
+from typing import Optional, List
 import random
 from curses import ascii
 from engine import Engine
@@ -25,17 +26,15 @@ class Game:
         '''Connection to engine for displaying and events'''
         self.running = False
         '''If the game is running'''
-        self.LevelManager = None
+        self.LevelManager: LevelManager = None
         '''Controls objects in each level'''
-        self.ScreenBuffer = None
+        self.ScreenBuffer: list[list[str]] = list
         '''2D buffer the size of the terminal for outputting to engine'''
-        self.ColorBuffer = None
+        self.ColorBuffer: list[list[str]] = list
         '''2D buffer the size of the terminal for outputting to engine'''
-        self.CreatureLayer = None
-        '''2D buffer the size of the map, holds all moving entities'''
-        self.MenuManager = None
+        self.MenuManager: MenuManager = None
         '''Holds all information for displaying menus'''
-        self.Messager = None
+        self.Messager: Messager = None
         '''Connection to the message queue instance'''
         self.Energy = 0
         '''Keeps track of how much energy to dispense to objects'''
@@ -60,7 +59,7 @@ class Game:
         self.Logger.debugOn = not timing
         self.Timing.allowTiming = timing
 
-    def displaySetup(self, stdscr: curses.window, timeDelay: int=None):
+    def displaySetup(self, stdscr: curses.window, timeDelay: int=0):
         '''
         Sets up the display for outputting to the screen
         '''
@@ -112,12 +111,12 @@ class Game:
         # update the game one time (generates FOV)
         self.loop(event='.')
 
-    def start(self, stdscr: curses.window=None):
+    def start(self, stdscr: curses.window | None = None):
         '''
         Entry point for the game to start, will call the main loop after
         full initialization
         '''
-        if self.Display:
+        if self.Display and stdscr:
             self.displaySetup(stdscr)
         else:
             self.noDisplaySetup()
