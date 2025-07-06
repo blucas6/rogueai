@@ -1,4 +1,5 @@
 from color import Colors
+from config import THROW_ANIM_DELAY
 from logger import Logger
 from message import Messager
 import itertools
@@ -419,7 +420,7 @@ class Entity:
                 frames[str(idx)] = [['' for col in row] for row in grid]
                 frames[str(idx)][pt[0]][pt[1]] = entity.glyph
             apos = [0,0]
-            delay = 0.05
+            delay = THROW_ANIM_DELAY
             animation = Animation(apos, frames, entity.color, delay=delay)
             animator = Animator()
             animator.queueUp(animation)

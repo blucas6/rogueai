@@ -10,8 +10,16 @@ from menu import MenuManager, GameState
 from message import Messager
 import secrets
 from enum import Enum
+from config import CHARGE_FRAME_DELAY
 
 class Event(Enum):
+    '''
+    Event types from user
+
+    NA    : not an event - continue without looking at user input
+    CLEAR : clearing event - reset menus and message window
+    EVENT : normal event - look at user input
+    '''
     NA = -1
     CLEAR = 0
     EVENT = 1
@@ -22,7 +30,7 @@ class Game:
     '''
     def __init__(self, specificSeed=None, msgBlocking=True, display=True,
                  timing=False):
-        self.Engine = Engine(debug=False)
+        self.Engine = Engine(debug=True)
         '''Connection to engine for displaying and events'''
         self.running = False
         '''If the game is running'''
@@ -167,7 +175,7 @@ class Game:
             # do not check for events if running
             eventType = Event.EVENT
             event = ' '
-            self.Engine.pause(self.LevelManager.Player.Charge.frameSpeed)
+            self.Engine.pause(CHARGE_FRAME_DELAY)
         return event, eventType
 
     def clearState(self):

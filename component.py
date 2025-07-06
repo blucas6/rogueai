@@ -1,3 +1,4 @@
+from config import CHARGE_FRAME_DELAY
 from logger import Logger
 import math
 from enum import Enum
@@ -31,8 +32,6 @@ class Charge:
         '''If entity is currently charging'''
         self.distance = 0
         '''Distance covered by charge - for damage'''
-        self.frameSpeed = 0.005
-        '''How much time the engine sleeps during charge'''
         self.entitySpeed = speed
         '''Keeps track of entity speed'''
         self.cost = speed-1

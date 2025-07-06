@@ -5,7 +5,7 @@ class Animation:
     '''
     Default animation class, used in Animator queue
     '''
-    def __init__(self, pos, frames: dict, color: Colors, delay=0.1):
+    def __init__(self, pos, frames: dict, color: Colors, delay=0.01):
         self.pos = pos
         '''position of the animation relative to the map'''
         self.frames = frames

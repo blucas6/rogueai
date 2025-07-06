@@ -2,6 +2,7 @@ import curses
 import traceback
 import time
 from color import Colors
+import copy
 
 class Engine:
     '''
@@ -17,7 +18,7 @@ class Engine:
         '''where to dump errors'''
         self.EventLog = 'EventLog.log'
         '''where to dump events'''
-        self.FrameDelay = 1
+        self.FrameDelay = 0
         '''optional delay between frames'''
         self.Frames = 0
         '''current frame counter'''
@@ -57,6 +58,8 @@ class Engine:
         self.Initialized = True
         self.logEvent(f'Engine initialized {(self.termrows,self.termcols)}')
         self.logEvent(f'  Frame Delay: {self.FrameDelay}')
+        self.logEvent(f'  Baudrate:    {curses.baudrate()} (bit/sec)')
+        self.logEvent(f'  Long Name:   {curses.longname()}')
         return self.termrows, self.termcols
 
     def output(self, screenChars: list=[], screenColors: list=[]):
@@ -88,7 +91,7 @@ class Engine:
             event = self.stdscr.getch()
             if event != curses.ERR:
                 if self.debug:
-                    self.logEvent(chr(event))
+                    self.logEvent(f'"{chr(event)}" ({event})')
                 return chr(event)
         except Exception as e:
             self.logError(f'Read input ERROR: {event}')
