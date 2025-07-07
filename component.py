@@ -23,6 +23,31 @@ class PickUp:
     def __init__(self):
         pass
 
+class Stackable:
+    '''
+    Stackable component, entities will combine into the passed in type
+    '''
+    def __init__(self, stack):
+        self.stack = stack
+
+    def getStack(self):
+        return self.stack()
+
+class Stack:
+    '''
+    Stack component, if an entity is a stack of entities
+    '''
+    def __init__(self, unstack):
+        self.unstack = unstack
+        self.amount = 0
+    
+    def addToStack(self, am=1):
+        self.amount += am
+
+    def getOne(self):
+        self.amount -= 1
+        return self.unstack()
+
 class Charge:
     '''
     Charge component, if an entity can run and charge

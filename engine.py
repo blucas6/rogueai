@@ -128,6 +128,8 @@ class Engine:
         
         Discards any key presses during that time
         '''
+        if t <= 0:
+            return
         time.sleep(t)
         while self.stdscr.getch() != -1:
             pass

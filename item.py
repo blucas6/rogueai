@@ -24,6 +24,17 @@ class Sword(Entity):
                              damage=2)
         self.PickUp = PickUp()
 
+class DartStack(Entity):
+    def __init__(self):
+        super().__init__(
+            name='Dart Stack',
+            glyph='≡',
+            color=Colors().red,
+            layer=Layer.OBJECT_LAYER,
+            size=Size.VERY_SMALL)
+        self.Stack = Stack(Dart)
+        self.PickUp = PickUp()
+
 class Dart(Entity):
     def __init__(self):
         super().__init__(name='Dart',
@@ -32,3 +43,4 @@ class Dart(Entity):
                          layer=Layer.OBJECT_LAYER,
                          size=Size.VERY_SMALL)
         self.PickUp = PickUp()
+        self.Stackable = Stackable(DartStack)

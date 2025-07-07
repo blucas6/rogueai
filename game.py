@@ -168,8 +168,8 @@ class Game:
         '''
         Gets an event and it's respective energy (continuously polling)
         '''
-        event = self.Engine.readInput()
         if self.GameState != GameState.RUNNING:
+            event = self.Engine.readInput()
             eventType,event = self.eventType(event)
         else:
             # do not check for events if running
@@ -193,6 +193,8 @@ class Game:
         '''
         Execute one loop in the game loop
         '''
+        # timing
+        self.Timing.start('Game Loop')
 
         # event was valid, save it
         self.previousEvent = event
@@ -250,6 +252,8 @@ class Game:
 
         # update and grab any messages in the queue
         self.messages()
+
+        self.Timing.end()
 
     def render(self):
         '''

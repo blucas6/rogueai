@@ -149,6 +149,7 @@ class Level:
                 self.EntityLayer[r][c] = [entity]
                 entity.setPosition(pos=pos, zlevel=self.z, idx=0)
             else:
+                index = -1  # append to the end
                 # if appending, position may be full
                 if entity.layer > Layer.OBJECT_LAYER:
                     # entities that have a large layer (greater than 1)
@@ -159,11 +160,55 @@ class Level:
                     if entity.layer <= maxLayer:
                         self.Logger.log(f'Error: layer issue with placement -> {entity.name} {maxLayer} {self.EntityLayer[r][c]}')
                         return
-                self.EntityLayer[r][c].append(entity)
-                entity.setPosition(pos=pos,
+                # some items are stackable
+                if hasattr(entity, 'Stackable'):
+                    self.Logger.log(f'Stackable {entity.name} check')
+                    for idx,e in enumerate(self.EntityLayer[r][c]):
+                        # stack of that type exists on the ground
+                        if (hasattr(e, 'Stack')):
+                            self.Logger.log(f'{type(e.Stack.unstack)} {type(entity)}')
+                        if (hasattr(e, 'Stack') and
+                            e.Stack.unstack == type(entity)):
+                            # add it to the stack
+                            e.Stack.addToStack()
+                            return
+                        # no stack yet, but an entity that is stackable exists
+                        elif (hasattr(e, 'Stackable') and
+                            type(e) == type(entity)):
+                            # replace the existing entity with a stack of 2
+                            entity = entity.Stackable.getStack()
+                            entity.Stack.addToStack(2)
+                            index = idx
+                            break
+                # some items are already a stack
+                elif hasattr(entity, 'Stack'):
+                    for idx,e in enumerate(self.EntityLayer[r][c]):
+                        # stackable item of that stack type exists
+                        if (hasattr(e, 'Stackable') and
+                            e.Stackable.stack == type(entity)):
+                            # replace the stackable item with the stack
+                            index = idx
+                            # add one to the stack
+                            entity.Stack.addToStack()
+                            break
+                        # stack item of that stack type exists
+                        elif (hasattr(e, 'Stack') and
+                              type(e) == type(entity)):
+                            # add the amount in this stack to that stack
+                            e.Stack.addToStack(entity.Stack.amount)
+                            return
+                if index == -1:
+                    self.EntityLayer[r][c].append(entity)
+                    entity.setPosition(pos=pos,
                                 zlevel=self.z,
                                 idx=len(self.EntityLayer[r][c])-1)
-                # self.Logger.log(f'Placing entity -> {entity.name} {pos}')
+                else:
+                    # index was specified
+                    self.EntityLayer[r][c][index] = entity
+                    entity.setPosition(pos=pos,
+                                       zlevel=self.z,
+                                       idx=index)
+                self.Logger.log(f'Placing entity -> {entity.name} {pos}')
         else:
             self.Logger.log(f'Error: entity outside of map -> {entity.name} {pos}')
 
@@ -326,9 +371,6 @@ class LevelManager:
 
         Play the animations generated from an entity turn
         '''
-        # timing
-        self.Timing.start('Game Loop')
-
         self.Logger.log('---------------------')
 
         level = self.Levels[self.CurrentZ]
@@ -377,8 +419,6 @@ class LevelManager:
                     if e:
                         self.Logger.log(f'Extra turns -> {e.name} {e.pos}')
                         entityStack.appendleft(e)
-
-        self.Timing.end()
 
     def entityUpdate(self, entity: Entity, level: Level, turn: int,
                      playerEvent):

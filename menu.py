@@ -118,7 +118,7 @@ class InventoryMenu(Menu):
         if inventory:
             self.text[1] = f'(Q)uiver:'
             if inventory.quiver:
-                self.text[2] = ' '+inventory.quiver.name
+                self.text[2] = self.displayItem(' ', inventory.quiver)
             self.text[3] = f'(M)ain Hand: '
             if inventory.mainHand:
                 self.text[4] = ' '+inventory.mainHand.name
@@ -139,8 +139,16 @@ class InventoryMenu(Menu):
                 for idx, entity in enumerate(inventory.contents):
                     i = 14+idx
                     if i < self.rows:
-                        self.text[i] = f' ({self.letter()}): {entity.name}'
+                        self.text[i] = self.displayItem(f'({self.letter()}): ',
+                                                        entity)
         self.count = 96
+    
+    def displayItem(self, preText, item):
+        if hasattr(item, 'Stack'):
+            amount = item.Stack.amount
+            return f'{preText}{item.name} ({amount})'
+        else:
+            return f'{preText}{item.name}'
 
     def letter(self):
         '''Return the correct character incremented from the previous'''
