@@ -15,6 +15,51 @@ def getOneLayerPts(myPos):
     '''
     return [[myPos[0]+pt[0],myPos[1]+pt[1]] for pt in ONE_LAYER_CIRCLE]
 
+def handleStacks(entity, set: list=[]):
+    index = -1  # where in the set to add the entity
+    newEntity = None
+    # Adding a STACKABLE
+    if hasattr(entity, 'Stackable'):
+        for idx,e in enumerate(set):
+            # stack of that type exists on the ground
+            if (hasattr(e, 'Stack') and
+                e.Stack.unstack == type(entity)):
+                # add it to the stack
+                e.Stack.addToStack()
+                Logger().log(f'Stackable {entity.name} adding to Stack {e.name} amount: {e.Stack.amount}')
+                break
+            # no stack yet, but an entity that is stackable exists
+            elif (hasattr(e, 'Stackable') and
+                type(e) == type(entity)):
+                # replace the existing entity with a stack of 2
+                newEntity = entity.Stackable.getStack()
+                newEntity.Stack.addToStack(2)
+                index = idx
+                Logger().log(f'Stackable {entity.name} combines {e.name} amount: {newEntity.Stack.amount}')
+                break
+    # Adding a STACK
+    elif hasattr(entity, 'Stack'):
+        for idx,e in enumerate(set):
+            # stackable item of that stack type exists
+            if (hasattr(e, 'Stackable') and
+                e.Stackable.stack == type(entity)):
+                # replace the stackable item with the stack
+                index = idx
+                # add one to the stack
+                entity.Stack.addToStack()
+                Logger().log(f'Stack {entity.name} adding to Stackable {e.name} amount: {entity.Stack.amount}')
+                break
+            # stack item of that stack type exists
+            elif (hasattr(e, 'Stack') and
+                    type(e) == type(entity)):
+                # add the amount in this stack to that stack
+                e.Stack.addToStack(entity.Stack.amount)
+                Logger().log(f'Stack {entity.name} adding to Stack {e.name} amount: {entity.Stack.amount}')
+                break
+    if not newEntity:
+        newEntity = entity
+    return newEntity, index
+
 class PickUp:
     '''
     Pick Up component, an entity will be automatically picked up upon walking
@@ -29,8 +74,10 @@ class Stackable:
     '''
     def __init__(self, stack):
         self.stack = stack
+        '''Stack object to create when entities stack'''
 
     def getStack(self):
+        '''Produce the stack object'''
         return self.stack()
 
 class Stack:
@@ -39,12 +86,16 @@ class Stack:
     '''
     def __init__(self, unstack):
         self.unstack = unstack
+        '''Unstack object to create when unstacking an entity'''
         self.amount = 0
+        '''Amount of entities in stack'''
     
     def addToStack(self, am=1):
+        '''Add entities to the stack'''
         self.amount += am
 
     def getOne(self):
+        '''Pop an entity from the stack'''
         self.amount -= 1
         return self.unstack()
 
@@ -310,7 +361,12 @@ class Inventory:
     
     def pickUp(self, entity):
         '''Pass in an entity to add it to the bag'''
-        self.contents.append(copy.deepcopy(entity))
+        if hasattr(entity, 'Stack') or hasattr(entity, 'Stackable'):
+            entity, index = handleStacks(entity, self.contents)
+        if index != -1:
+            self.contents[index] = entity
+        else:
+            self.contents.append(entity)
 
     def drop(self):
         '''Place an entity to the ground'''
